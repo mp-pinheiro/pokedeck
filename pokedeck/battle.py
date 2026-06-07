@@ -7,6 +7,7 @@ unlike the encrypted party/box structs.
 from dataclasses import dataclass, field
 
 from . import typechart
+from .descriptor import FieldSpec
 
 
 @dataclass
@@ -36,8 +37,9 @@ def _read_field(buf, spec, byteorder):
     return int.from_bytes(buf[spec.offset: spec.offset + spec.size], byteorder)
 
 
-def parse_battler(buf, descriptor, battler_index=0, side="?"):
-    fields = descriptor.battle.fields
+def parse_battler(buf, descriptor, battler_index=0, side="?", fields=None):
+    if fields is None:
+        fields = descriptor.battle.fields
     byteorder = "little" if descriptor.endianness == "little" else "big"
     table = typechart.TYPE_TABLES[descriptor.battle.type_table]
 
@@ -109,3 +111,67 @@ def find_battle_mon(data, start_addr, hp, level, maxhp):
             hits.append(start_addr + i)
         i = data.find(hp_bytes, i + 1)
     return hits
+
+
+# Fields before the hp slot are identical for natural and packed alignment
+# (the only divergence is a padding byte before hp). hp/level/maxHP/status1 are
+# derived from the located hp offset (0x2A natural, 0x29 packed).
+_PRE_HP_FIELDS = ("species", "attack", "defense", "speed", "spAttack", "spDefense",
+                  "moves", "type1", "type2", "type3")
+
+
+def build_field_map(descriptor, hp_off):
+    fields = {k: v for k, v in descriptor.battle.fields.items() if k in _PRE_HP_FIELDS}
+    fields["hp"] = FieldSpec(hp_off, 2)
+    fields["level"] = FieldSpec(hp_off + 2, 1)
+    fields["maxHP"] = FieldSpec(hp_off + 4, 2)
+    fields["status1"] = FieldSpec(hp_off + 0x26, 4)
+    return fields
+
+
+def _u16(data, off):
+    return int.from_bytes(data[off:off + 2], "little")
+
+
+def plausible_battler(data, base, hp_off):
+    """Heuristic: does `base` look like a live BattlePokemon for this alignment?"""
+    if base < 0 or base + hp_off + 6 > len(data):
+        return False
+    if not 1 <= _u16(data, base) <= 1600:  # species
+        return False
+    if not 1 <= data[base + hp_off + 2] <= 100:  # level
+        return False
+    hp, maxhp = _u16(data, base + hp_off), _u16(data, base + hp_off + 4)
+    if not 0 < hp <= maxhp <= 2000:
+        return False
+    return all(_u16(data, base + 2 + i * 2) <= 1500 for i in range(5))  # 5 stats
+
+
+def _find_stride(data, base, hp_off, opp_level, stride_range):
+    for stride in range(stride_range[0], stride_range[1] + 1):
+        b2 = base + stride
+        if plausible_battler(data, b2, hp_off):
+            if opp_level is None or data[b2 + hp_off + 2] == opp_level:
+                return stride
+    return None
+
+
+def automap_scan(data, hp, level, maxhp, opp_level=None, stride_range=(0x58, 0xE0)):
+    """Locate gBattleMons[0] by the hp/level/maxHP signature, determine alignment,
+    and find the battler stride. Returns a list of {base_index, hp_off, stride}."""
+    out = []
+    hp_bytes = hp.to_bytes(2, "little")
+    i = data.find(hp_bytes)
+    while i != -1:
+        if i + 6 <= len(data) and data[i + 2] == level and _u16(data, i + 4) == maxhp:
+            for hp_off in (0x2A, 0x29):
+                base = i - hp_off
+                if plausible_battler(data, base, hp_off):
+                    out.append({
+                        "base_index": base,
+                        "hp_off": hp_off,
+                        "stride": _find_stride(data, base, hp_off, opp_level, stride_range),
+                    })
+                    break
+        i = data.find(hp_bytes, i + 1)
+    return out

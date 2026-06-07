@@ -13,12 +13,25 @@ class RetroArchError(Exception):
 
 
 class RetroArchClient:
-    def __init__(self, host="127.0.0.1", port=55355, timeout=1.0):
+    def __init__(self, host="127.0.0.1", port=55355, timeout=1.0,
+                 transport="udp", socks_port=None, relay_host="127.0.0.1", relay_port=55356):
         self.host = host
         self.port = port
         self.timeout = timeout
+        # transport: "udp" = direct (on-device); "tcp"/"socks" = via a host-side
+        # socat TCP<->UDP relay, reached directly ("tcp") or through the Claude
+        # Code host SOCKS bridge ("socks") so a sandboxed process can reach it.
+        self.transport = transport
+        self.socks_port = socks_port
+        self.relay_host = relay_host
+        self.relay_port = relay_port
 
     def _command(self, command, expect_reply=True, bufsize=8192):
+        if self.transport == "udp":
+            return self._command_udp(command, expect_reply, bufsize)
+        return self._command_relay(command, expect_reply)
+
+    def _command_udp(self, command, expect_reply=True, bufsize=8192):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(self.timeout)
         try:
@@ -26,6 +39,34 @@ class RetroArchClient:
             if not expect_reply:
                 return None
             data, _ = sock.recvfrom(bufsize)
+            return data.decode("ascii", errors="replace").strip()
+        finally:
+            sock.close()
+
+    def _open_relay(self):
+        if self.transport == "socks":
+            from .socks import socks5_connect
+            return socks5_connect(self.relay_host, self.relay_port,
+                                  proxy_port=self.socks_port, timeout=self.timeout)
+        return socket.create_connection((self.relay_host, self.relay_port), timeout=self.timeout)
+
+    def _command_relay(self, command, expect_reply=True):
+        import select
+        sock = self._open_relay()
+        sock.settimeout(self.timeout)
+        try:
+            sock.sendall(command.encode("ascii"))
+            if not expect_reply:
+                return None
+            data = sock.recv(65536)
+            while True:  # one relayed UDP datagram may arrive as >1 TCP chunk
+                ready, _, _ = select.select([sock], [], [], 0.05)
+                if not ready:
+                    break
+                more = sock.recv(65536)
+                if not more:
+                    break
+                data += more
             return data.decode("ascii", errors="replace").strip()
         finally:
             sock.close()

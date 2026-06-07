@@ -10,7 +10,14 @@ import argparse
 import sys
 import time
 
-from .battle import find_battle_mon, in_battle, parse_battler, read_battlers
+from .battle import (
+    automap_scan,
+    build_field_map,
+    find_battle_mon,
+    in_battle,
+    parse_battler,
+    read_battlers,
+)
 from .descriptor import resolve_descriptor
 from .retroarch import RetroArchClient, RetroArchError
 
@@ -137,6 +144,43 @@ def cmd_findmon(client, desc, args):
             print("  raw[base..+0x60]: " + " ".join(f"{b:02x}" for b in data[off:off + 0x60]))
 
 
+def cmd_automap(client, desc, args):
+    if args.dump:
+        with open(args.dump, "rb") as fh:
+            data = fh.read()
+        base_addr = int(args.base, 16)
+        print(f"loaded {len(data)} bytes from {args.dump} (base 0x{base_addr:08x})")
+    else:
+        base_addr, end = int(args.start, 16), int(args.end, 16)
+        print(f"scanning 0x{base_addr:08x}-0x{end:08x} ...")
+        data = client.read_memory(base_addr, end - base_addr)
+    results = automap_scan(data, args.hp, args.level, args.maxhp, args.opp_level)
+    if not results:
+        print("no plausible gBattleMons found — re-check HP/level/maxHP or widen --start/--end")
+        return
+    for r in results:
+        base_abs = base_addr + r["base_index"]
+        hp_off = r["hp_off"]
+        align = "natural" if hp_off == 0x2A else "packed"
+        fields = build_field_map(desc, hp_off)
+        need = max(s.offset + s.size * s.count for s in fields.values())
+        print(f"\n=== gBattleMons[0] @ 0x{base_abs:08x}  ({align}, hp_off=0x{hp_off:02x}) ===")
+        print_mon(parse_battler(data[r["base_index"]:r["base_index"] + need], desc, 0, "player", fields))
+        stride = r["stride"]
+        if stride:
+            opp_idx = r["base_index"] + stride
+            print(f"\n  battler stride = {stride} (0x{stride:02x})  opponent @ 0x{base_abs + stride:08x}")
+            print_mon(parse_battler(data[opp_idx:opp_idx + need], desc, 1, "opponent", fields))
+        else:
+            print("\n  stride not found — pass --opp-level <n> or check you are in a battle")
+        print("\n  --- descriptor patch (data/games/pokemon_lazarus.json) ---")
+        print(f'    symbols.gBattleMons   = "0x{base_abs:08x}"')
+        print(f'    battle.battler_stride = {stride if stride else "<unknown>"}')
+        print(f'    battle.alignment      = "{align}"')
+        if hp_off != 0x2A:
+            print(f'    packed offsets: hp=0x{hp_off:02x} level=0x{hp_off + 2:02x} maxHP=0x{hp_off + 4:02x} status1=0x{hp_off + 0x26:02x}')
+
+
 COMMANDS = {
     "info": cmd_info,
     "status": cmd_status,
@@ -145,6 +189,7 @@ COMMANDS = {
     "battle": cmd_battle,
     "live": cmd_live,
     "findmon": cmd_findmon,
+    "automap": cmd_automap,
 }
 
 
@@ -154,6 +199,12 @@ def main(argv=None):
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=55355)
     p.add_argument("--interval", type=float, default=0.1, help="live poll interval seconds")
+    p.add_argument("--transport", choices=["udp", "tcp", "socks"], default="udp",
+                   help="udp=direct (on-device); socks=via host SOCKS bridge + socat relay")
+    p.add_argument("--socks-port", type=int, default=None, dest="socks_port",
+                   help="host SOCKS proxy port (default $CLAUDE_CODE_HOST_SOCKS_PROXY_PORT)")
+    p.add_argument("--relay-port", type=int, default=55356, dest="relay_port",
+                   help="host socat TCP port forwarding to RetroArch UDP 55355")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("info")
     sub.add_parser("status")
@@ -165,6 +216,15 @@ def main(argv=None):
     fm.add_argument("--maxhp", type=int, required=True)
     fm.add_argument("--start", default="02000000")
     fm.add_argument("--end", default="02040000")
+    am = sub.add_parser("automap")
+    am.add_argument("--hp", type=int, required=True)
+    am.add_argument("--level", type=int, required=True)
+    am.add_argument("--maxhp", type=int, required=True)
+    am.add_argument("--opp-level", type=int, default=None, dest="opp_level")
+    am.add_argument("--start", default="02000000")
+    am.add_argument("--end", default="02040000")
+    am.add_argument("--dump", default=None, help="read a raw dump file instead of live RetroArch")
+    am.add_argument("--base", default="02000000", help="base address of the --dump file")
     d = sub.add_parser("dump")
     d.add_argument("address", help="hex address, e.g. 02024084")
     d.add_argument("length", type=int)
@@ -173,7 +233,10 @@ def main(argv=None):
     args = p.parse_args(argv)
 
     desc = resolve_descriptor(args.game)
-    client = RetroArchClient(args.host, args.port)
+    client = RetroArchClient(args.host, args.port,
+                             timeout=5.0 if args.transport != "udp" else 1.0,
+                             transport=args.transport, socks_port=args.socks_port,
+                             relay_port=args.relay_port)
     try:
         COMMANDS[args.cmd](client, desc, args)
     except KeyboardInterrupt:
