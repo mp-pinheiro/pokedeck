@@ -10,12 +10,17 @@ import type { BattleListener, BattleState, BattleTransport, InteractiveImpl, Spe
 // panel scrolls, and B (onCancel) goes Back from the detail view.
 const interactive: InteractiveImpl = {
   pressable: ({ onPress, children, style }) => (
-    <Focusable onActivate={() => onPress()} onClick={() => onPress()} style={style}>
+    <Focusable onActivate={() => onPress()} onClick={() => onPress()} onOKActionDescription="Select" style={style}>
       {children}
     </Focusable>
   ),
   focusItem: ({ children, style }) => <Focusable style={style}>{children}</Focusable>,
-  cancelZone: ({ onCancel, children }) => <Focusable onCancel={() => onCancel()}>{children}</Focusable>,
+  // B anywhere in the detail view goes Back; the footer shows the "Back" hint.
+  cancelZone: ({ onCancel, children }) => (
+    <Focusable onCancel={() => onCancel()} onCancelActionDescription="Back">
+      {children}
+    </Focusable>
+  ),
 };
 
 // PokeAPI lookup via the backend (disk-cached). Backend returns {} when offline.
