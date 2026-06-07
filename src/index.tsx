@@ -1,100 +1,31 @@
 import { PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
 import { addEventListener, removeEventListener, call, definePlugin } from "@decky/api";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { FaBolt } from "react-icons/fa";
+import { BattleView, useBattleState } from "@poke-deck/ui";
+import type { BattleListener, BattleState, BattleTransport } from "@poke-deck/ui";
 
-interface Mon {
-  species_id: number;
-  species: string;
-  level: number;
-  hp: number;
-  max_hp: number;
-  status: number;
-  shiny: boolean;
-  ability: string | null;
-  item: string | null;
-  friendship: number;
-  ivs: Record<string, number> | null;
-  stats: Record<string, number>;
-  types: string[];
-  weak: [string, number][];
-  resist: [string, number][];
-  immune: string[];
-  moves: { id: number; name: string; type: string | null; category: string | null; pp: number | null }[];
-}
-
-interface BattleState {
-  connected: boolean;
-  in_battle: boolean;
-  player?: Mon;
-  opponent?: Mon;
-}
-
-const mult = (m: number) => (m === 0 ? "immune" : `x${m}`);
-
-function MonView({ mon }: { mon: Mon }) {
-  const pct = mon.max_hp ? Math.round((mon.hp / mon.max_hp) * 100) : 0;
-  return (
-    <div style={{ fontSize: "0.85em", lineHeight: 1.45 }}>
-      <div style={{ fontWeight: "bold" }}>
-        {mon.shiny ? "★ " : ""}{mon.species} · Lv{mon.level}
-      </div>
-      <div>
-        HP {mon.hp}/{mon.max_hp} ({pct}%) · {mon.types.join(" / ")}
-      </div>
-      {mon.ability && (
-        <div>
-          Ability: {mon.ability}
-          {mon.item ? ` · Item: ${mon.item}` : ""}
-        </div>
-      )}
-      {mon.weak.length > 0 && (
-        <div style={{ color: "#ff6b6b" }}>
-          Weak: {mon.weak.map(([t, m]) => `${t} ${mult(m)}`).join(", ")}
-        </div>
-      )}
-      {mon.immune.length > 0 && <div>Immune: {mon.immune.join(", ")}</div>}
-      <div>
-        Moves: {mon.moves.map((mv) => (mv.pp != null ? `${mv.name} (${mv.pp})` : mv.name)).join(", ") || "—"}
-      </div>
-    </div>
-  );
+// Decky transport: the Python backend pushes via decky.emit("battle_update");
+// pull a snapshot once on open so the panel isn't empty.
+function deckyTransport(): BattleTransport {
+  return {
+    subscribe(listener: BattleListener) {
+      const handler = addEventListener<[BattleState]>("battle_update", (s) => listener(s));
+      call<[], BattleState>("get_snapshot").then(listener).catch(() => undefined);
+      return () => removeEventListener("battle_update", handler);
+    },
+  };
 }
 
 function Content() {
-  const [state, setState] = useState<BattleState | null>(null);
-
-  useEffect(() => {
-    const listener = addEventListener<[BattleState]>("battle_update", (s) => setState(s));
-    call<[], BattleState>("get_snapshot")
-      .then((s) => setState(s))
-      .catch(() => undefined);
-    return () => removeEventListener("battle_update", listener);
-  }, []);
-
-  if (!state || !state.connected) {
-    return (
-      <PanelSection title="Poke Deck">
-        <PanelSectionRow>RetroArch not connected.</PanelSectionRow>
-      </PanelSection>
-    );
-  }
-  if (!state.in_battle) {
-    return (
-      <PanelSection title="Poke Deck">
-        <PanelSectionRow>Not in a battle.</PanelSectionRow>
-      </PanelSection>
-    );
-  }
+  const transport = useMemo(deckyTransport, []);
+  const state = useBattleState(transport);
   return (
-    <>
-      <PanelSection title="Opponent">
-        <PanelSectionRow>{state.opponent && <MonView mon={state.opponent} />}</PanelSectionRow>
-      </PanelSection>
-      <PanelSection title="Your Pokémon">
-        <PanelSectionRow>{state.player && <MonView mon={state.player} />}</PanelSectionRow>
-      </PanelSection>
-    </>
+    <PanelSection title="Poke Deck">
+      <PanelSectionRow>
+        <BattleView state={state} />
+      </PanelSectionRow>
+    </PanelSection>
   );
 }
 
