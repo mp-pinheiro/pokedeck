@@ -16,7 +16,7 @@ import decky
 # before importing anything from pokedeck.
 os.environ.setdefault("POKEDECK_GAMES_DIR", os.path.join(decky.DECKY_PLUGIN_DIR, "data", "games"))
 
-from pokedeck.descriptor import resolve_descriptor
+from pokedeck.descriptor import resolve_game
 from pokedeck.pokedata import PokeData
 from pokedeck.retroarch import RetroArchClient
 from pokedeck.server import Hub, Session, make_server, read_payload
@@ -28,13 +28,23 @@ NOT_CONNECTED = {"connected": False, "in_battle": False}
 
 
 class Plugin:
+    # Class-body defaults: Decky does not truly instantiate Plugin (self is the
+    # class object, decky-loader #509), and the frontend may call methods before
+    # _main finishes — so these must exist up front.
+    _latest = dict(NOT_CONNECTED)
+    _session = None
+    _server = None
+    _task = None
+
     async def get_snapshot(self) -> dict:
         return self._latest
 
     async def set_game(self, game: str) -> dict:
         """Frontend-callable: switch the active game descriptor (QAM + browser)."""
+        if self._session is None:
+            return {"game": None}
         self._session.set_game(game)
-        return {"game": self._session.descriptor.id}
+        return {"game": self._session.game}
 
     async def _poll_loop(self):
         decky.logger.info("poke-deck capture loop started")
@@ -54,8 +64,8 @@ class Plugin:
         self._interval = 0.5
         self._latest = dict(NOT_CONNECTED)
         pd = PokeData(DATA_DIR)
-        desc = resolve_descriptor("pokemon_lazarus")
-        self._session = Session(RetroArchClient(transport="udp"), desc, pd)
+        desc, stem = resolve_game("pokemon_lazarus")
+        self._session = Session(RetroArchClient(transport="udp"), desc, pd, stem)
         self._hub = Hub()
         self._server = None
         try:

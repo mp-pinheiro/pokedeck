@@ -9,7 +9,7 @@ export function GamePicker({
   current?: string;
   onSelect: (id: string) => void;
 }) {
-  if (games.length <= 1) return null;
+  if (!Array.isArray(games) || games.length <= 1) return null;
   return (
     <select
       value={current ?? ""}

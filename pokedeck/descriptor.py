@@ -6,6 +6,7 @@ parser is fully data-driven.
 """
 import json
 import os
+import re
 from dataclasses import dataclass
 
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -100,14 +101,31 @@ def resolve_descriptor(name_or_path):
     return GameDescriptor.load(path)
 
 
+def resolve_game(game):
+    """Resolve a game KEY (filename stem or alias) to (descriptor, stem), looking
+    ONLY inside GAMES_DIR. Safe for untrusted request input (rejects paths)."""
+    stem = _ALIASES.get(game, game)
+    if not isinstance(stem, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", stem):
+        raise FileNotFoundError(f"invalid game {game!r}")
+    path = os.path.join(GAMES_DIR, stem + ".json")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"no descriptor for {game!r}")
+    return GameDescriptor.load(path), stem
+
+
 def list_games():
-    """[{id, name}] for every descriptor in GAMES_DIR (for the game picker)."""
+    """[{id, name}] for every descriptor in GAMES_DIR. id = filename stem (what
+    resolve_game / the picker uses), not the JSON 'id' field."""
     out = []
-    for fn in sorted(os.listdir(GAMES_DIR)):
+    try:
+        names = sorted(os.listdir(GAMES_DIR))
+    except OSError:
+        return out
+    for fn in names:
         if fn.endswith(".json"):
             try:
                 d = GameDescriptor.load(os.path.join(GAMES_DIR, fn))
-                out.append({"id": d.id, "name": d.name})
+                out.append({"id": fn[:-5], "name": d.name})
             except (OSError, ValueError, KeyError):
                 pass
     return out

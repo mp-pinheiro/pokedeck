@@ -10,8 +10,8 @@ export function App() {
 
   useEffect(() => {
     fetch("/api/info")
-      .then((r) => r.json())
-      .then(setInfo)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => setInfo({ game: d.game, games: Array.isArray(d.games) ? d.games : [] }))
       .catch(() => undefined);
   }, []);
 
@@ -21,8 +21,8 @@ export function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ game: id }),
     })
-      .then((r) => r.json())
-      .then(setInfo)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => setInfo((prev) => ({ ...prev, game: d.game })))
       .catch(() => undefined);
   };
 

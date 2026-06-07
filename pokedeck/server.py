@@ -16,7 +16,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .battle import read_battle
-from .descriptor import list_games, resolve_descriptor
+from .descriptor import list_games, resolve_game
 from .payload import battle_payload
 from .pokedata import PokeData
 from .retroarch import RetroArchClient, RetroArchError
@@ -60,12 +60,14 @@ class Hub:
 
 
 class Session:
-    """The current game/reader, swappable at runtime via POST /api/game."""
+    """The current game/reader, swappable at runtime via POST /api/game. PokeData
+    is shared across games (all use the same National-Dex name numbering)."""
 
-    def __init__(self, client, descriptor, pd):
+    def __init__(self, client, descriptor, pd, game):
         self.client = client
         self.pd = pd
         self._descriptor = descriptor
+        self._game = game  # canonical key (filename stem); matches list_games ids
         self._lock = threading.Lock()
 
     @property
@@ -73,10 +75,16 @@ class Session:
         with self._lock:
             return self._descriptor
 
+    @property
+    def game(self):
+        with self._lock:
+            return self._game
+
     def set_game(self, game):
-        descriptor = resolve_descriptor(game)
+        descriptor, stem = resolve_game(game)
         with self._lock:
             self._descriptor = descriptor
+            self._game = stem
         return descriptor
 
 
@@ -92,9 +100,14 @@ def read_payload(session):
 
 
 def poll_loop(hub, session, interval):
+    import sys
     last = None
     while True:
-        payload = read_payload(session)
+        try:
+            payload = read_payload(session)
+        except Exception as exc:  # never let the poll thread die
+            print(f"poke-deck poll error: {exc!r}", file=sys.stderr)
+            payload = dict(DISCONNECTED)
         if payload != last:
             last = payload
             hub.publish(payload)
@@ -118,7 +131,7 @@ def make_handler(hub, session, web_dir):
 
         def _info(self):
             return {
-                "game": session.descriptor.id,
+                "game": session.game,
                 "name": session.descriptor.name,
                 "games": list_games(),
                 "connected": hub.latest.get("connected", False),
@@ -134,9 +147,10 @@ def make_handler(hub, session, web_dir):
             if path == "/api/info":
                 return self._json(self._info())
             rel = path.lstrip("/") or "index.html"
-            full = os.path.normpath(os.path.join(web_dir, rel))
-            if not full.startswith(web_dir) or not os.path.isfile(full):
-                full = os.path.join(web_dir, "index.html")  # SPA fallback
+            root = os.path.realpath(web_dir)
+            full = os.path.realpath(os.path.join(root, rel))
+            if not (full == root or full.startswith(root + os.sep)) or not os.path.isfile(full):
+                full = os.path.join(root, "index.html")  # SPA fallback
             try:
                 with open(full, "rb") as fh:
                     body = fh.read()
@@ -150,9 +164,11 @@ def make_handler(hub, session, web_dir):
                 return self.send_error(404)
             try:
                 length = int(self.headers.get("Content-Length", 0))
-                data = json.loads(self.rfile.read(length) or b"{}")
-                session.set_game(data["game"])
-            except (ValueError, KeyError, FileNotFoundError) as exc:
+                game = json.loads(self.rfile.read(length) or b"{}").get("game")
+                if not isinstance(game, str):
+                    raise ValueError("game must be a string")
+                session.set_game(game)
+            except (ValueError, TypeError, KeyError, OSError) as exc:
                 return self._json({"error": str(exc)}, 400)
             self._json(self._info())
 
@@ -207,7 +223,8 @@ def main():
     p.add_argument("--port", type=int, default=8420, help="web server port (avoid Decky's 1337/8080)")
     args = p.parse_args()
 
-    session = Session(build_client(args), resolve_descriptor(args.game), PokeData())
+    descriptor, stem = resolve_game(args.game)
+    session = Session(build_client(args), descriptor, PokeData(), stem)
     hub = Hub()
     threading.Thread(target=poll_loop, args=(hub, session, args.interval), daemon=True).start()
     httpd = make_server(hub, session, args.port)

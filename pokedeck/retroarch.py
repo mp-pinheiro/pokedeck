@@ -113,7 +113,10 @@ class RetroArchClient:
                 raise RetroArchError(f"unexpected reply: {reply!r}")
             if parts[2] == "-1":
                 raise RetroArchError(f"core read failed @ 0x{address:x}: {' '.join(parts[2:])}")
-            data = bytes(int(b, 16) for b in parts[2:])
+            try:
+                data = bytes(int(b, 16) for b in parts[2:])
+            except ValueError:
+                raise RetroArchError(f"non-hex reply @ 0x{address:x}: {reply!r}")
             if len(data) != num_bytes:
                 raise RetroArchError(f"short read @ 0x{address:x}: got {len(data)} of {num_bytes} bytes")
             return data
