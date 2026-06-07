@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(_PKG_DIR)
-GAMES_DIR = os.path.join(REPO_ROOT, "data", "games")
+GAMES_DIR = os.environ.get("POKEDECK_GAMES_DIR", os.path.join(REPO_ROOT, "data", "games"))
 
 _ALIASES = {"lazarus": "pokemon_lazarus", "emerald": "pokemon_emerald"}
 
@@ -98,3 +98,16 @@ def resolve_descriptor(name_or_path):
     if not os.path.isfile(path):
         raise FileNotFoundError(f"no descriptor for {name_or_path!r} (looked at {path})")
     return GameDescriptor.load(path)
+
+
+def list_games():
+    """[{id, name}] for every descriptor in GAMES_DIR (for the game picker)."""
+    out = []
+    for fn in sorted(os.listdir(GAMES_DIR)):
+        if fn.endswith(".json"):
+            try:
+                d = GameDescriptor.load(os.path.join(GAMES_DIR, fn))
+                out.append({"id": d.id, "name": d.name})
+            except (OSError, ValueError, KeyError):
+                pass
+    return out

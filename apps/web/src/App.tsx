@@ -1,10 +1,31 @@
-import { useMemo } from "react";
-import { BattleView, useBattleState } from "@poke-deck/ui";
+import { useEffect, useMemo, useState } from "react";
+import { BattleView, GamePicker, useBattleState } from "@poke-deck/ui";
+import type { Game } from "@poke-deck/ui";
 import { sseTransport } from "./sseTransport";
 
 export function App() {
   const transport = useMemo(() => sseTransport("/events"), []);
   const state = useBattleState(transport);
+  const [info, setInfo] = useState<{ game?: string; games: Game[] }>({ games: [] });
+
+  useEffect(() => {
+    fetch("/api/info")
+      .then((r) => r.json())
+      .then(setInfo)
+      .catch(() => undefined);
+  }, []);
+
+  const selectGame = (id: string) => {
+    fetch("/api/game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game: id }),
+    })
+      .then((r) => r.json())
+      .then(setInfo)
+      .catch(() => undefined);
+  };
+
   const status = !state
     ? "connecting…"
     : !state.connected
@@ -29,6 +50,8 @@ export function App() {
         <h1 style={{ fontSize: "1.4em", margin: 0 }}>Poke Deck</h1>
         <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot, display: "inline-block" }} />
         <span style={{ opacity: 0.7 }}>{status}</span>
+        <span style={{ flex: 1 }} />
+        <GamePicker games={info.games} current={info.game} onSelect={selectGame} />
       </header>
       <BattleView state={state} />
     </div>

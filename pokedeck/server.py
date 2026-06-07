@@ -1,7 +1,7 @@
-"""Standalone HTTP + SSE server that reuses the pokedeck reader to push live
-battle payloads to a browser. Stdlib only (no third-party deps) so the same
-Hub/poll logic can later be embedded in the Decky backend without bundling
-anything. SSE is server->push only (exactly our case) and EventSource
+"""Stdlib-only HTTP + SSE server that reuses the pokedeck reader to push live
+battle payloads to a browser. No third-party deps, so the same Hub/Session/
+make_server can be embedded in the Decky backend without bundling anything
+(see main.py). SSE is server->push only (our exact case) and EventSource
 auto-reconnects; serving the SPA + SSE from one http://localhost origin avoids
 mixed-content/CORS entirely.
 
@@ -16,17 +16,16 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .battle import read_battle
-from .descriptor import resolve_descriptor
+from .descriptor import list_games, resolve_descriptor
 from .payload import battle_payload
 from .pokedata import PokeData
 from .retroarch import RetroArchClient, RetroArchError
 
-WEB_DIR = os.environ.get(
+DEFAULT_WEB_DIR = os.environ.get(
     "POKEDECK_WEB_DIR",
     os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "apps", "web", "dist"),
 )
 DISCONNECTED = {"connected": False, "in_battle": False}
-
 _CTYPES = {".html": "text/html", ".js": "text/javascript", ".css": "text/css",
            ".json": "application/json", ".svg": "image/svg+xml", ".ico": "image/x-icon"}
 
@@ -60,23 +59,49 @@ class Hub:
             self._subs.discard(q)
 
 
-def poll_loop(hub, client, descriptor, pd, interval):
+class Session:
+    """The current game/reader, swappable at runtime via POST /api/game."""
+
+    def __init__(self, client, descriptor, pd):
+        self.client = client
+        self.pd = pd
+        self._descriptor = descriptor
+        self._lock = threading.Lock()
+
+    @property
+    def descriptor(self):
+        with self._lock:
+            return self._descriptor
+
+    def set_game(self, game):
+        descriptor = resolve_descriptor(game)
+        with self._lock:
+            self._descriptor = descriptor
+        return descriptor
+
+
+def read_payload(session):
+    try:
+        in_battle, mons = read_battle(session.client, session.descriptor)
+    except (RetroArchError, OSError):
+        return dict(DISCONNECTED)
+    payload = {"connected": True, "in_battle": in_battle}
+    if in_battle:
+        payload.update(battle_payload(mons, session.pd))
+    return payload
+
+
+def poll_loop(hub, session, interval):
     last = None
     while True:
-        try:
-            in_battle, mons = read_battle(client, descriptor)
-            payload = {"connected": True, "in_battle": in_battle}
-            if in_battle:
-                payload.update(battle_payload(mons, pd))
-        except (RetroArchError, OSError):
-            payload = dict(DISCONNECTED)
+        payload = read_payload(session)
         if payload != last:
             last = payload
             hub.publish(payload)
         time.sleep(interval)
 
 
-def make_handler(hub):
+def make_handler(hub, session, web_dir):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -88,24 +113,48 @@ def make_handler(hub):
             self.end_headers()
             self.wfile.write(body)
 
+        def _json(self, obj, status=200):
+            self._send(json.dumps(obj).encode(), "application/json", status)
+
+        def _info(self):
+            return {
+                "game": session.descriptor.id,
+                "name": session.descriptor.name,
+                "games": list_games(),
+                "connected": hub.latest.get("connected", False),
+                "in_battle": hub.latest.get("in_battle", False),
+            }
+
         def do_GET(self):
             path = self.path.split("?", 1)[0]
             if path == "/events":
                 return self._sse()
             if path == "/api/state":
-                return self._send(json.dumps(hub.latest).encode(), "application/json")
-            # static SPA + fallback to index.html for client routes
+                return self._json(hub.latest)
+            if path == "/api/info":
+                return self._json(self._info())
             rel = path.lstrip("/") or "index.html"
-            full = os.path.normpath(os.path.join(WEB_DIR, rel))
-            if not full.startswith(WEB_DIR) or not os.path.isfile(full):
-                full = os.path.join(WEB_DIR, "index.html")
+            full = os.path.normpath(os.path.join(web_dir, rel))
+            if not full.startswith(web_dir) or not os.path.isfile(full):
+                full = os.path.join(web_dir, "index.html")  # SPA fallback
             try:
                 with open(full, "rb") as fh:
                     body = fh.read()
             except OSError:
-                return self._send(b"poke-deck: web app not built (run pnpm --filter @poke-deck/web build)",
+                return self._send(b"poke-deck: web app not built (pnpm --filter @poke-deck/web build)",
                                   "text/plain", 503)
             self._send(body, _CTYPES.get(os.path.splitext(full)[1], "application/octet-stream"))
+
+        def do_POST(self):
+            if self.path.split("?", 1)[0] != "/api/game":
+                return self.send_error(404)
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(length) or b"{}")
+                session.set_game(data["game"])
+            except (ValueError, KeyError, FileNotFoundError) as exc:
+                return self._json({"error": str(exc)}, 400)
+            self._json(self._info())
 
         def _sse(self):
             self.send_response(200)
@@ -134,6 +183,10 @@ def make_handler(hub):
     return Handler
 
 
+def make_server(hub, session, port=8420, host="127.0.0.1", web_dir=DEFAULT_WEB_DIR):
+    return ThreadingHTTPServer((host, port), make_handler(hub, session, web_dir))
+
+
 def build_client(args):
     return RetroArchClient(
         args.ra_host, args.ra_port,
@@ -154,12 +207,11 @@ def main():
     p.add_argument("--port", type=int, default=8420, help="web server port (avoid Decky's 1337/8080)")
     args = p.parse_args()
 
-    desc = resolve_descriptor(args.game)
+    session = Session(build_client(args), resolve_descriptor(args.game), PokeData())
     hub = Hub()
-    threading.Thread(target=poll_loop, args=(hub, build_client(args), desc, PokeData(), args.interval),
-                     daemon=True).start()
-    httpd = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(hub))
-    print(f"poke-deck web on http://127.0.0.1:{args.port}  (game={desc.name}, ra-transport={args.transport})")
+    threading.Thread(target=poll_loop, args=(hub, session, args.interval), daemon=True).start()
+    httpd = make_server(hub, session, args.port)
+    print(f"poke-deck web on http://127.0.0.1:{args.port}  (game={session.descriptor.name}, ra-transport={args.transport})")
     httpd.serve_forever()
 
 

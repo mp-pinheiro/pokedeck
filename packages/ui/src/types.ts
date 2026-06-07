@@ -35,6 +35,11 @@ export interface BattleState {
   opponent?: Mon;
 }
 
+export interface Game {
+  id: string;
+  name: string;
+}
+
 export type BattleListener = (state: BattleState) => void;
 
 // Host-supplied transport: browser implements it over SSE/WebSocket, Decky over @decky/api events.
