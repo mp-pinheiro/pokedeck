@@ -22,10 +22,12 @@ export interface Mon {
   status: number;
   shiny: boolean;
   ability: string | null;
+  abilities: string[]; // species' possible abilities (baseline)
   item: string | null;
   friendship: number;
   ivs: Record<string, number> | null;
-  stats: Record<string, number>;
+  stats: Record<string, number>; // live in-battle stats
+  base: Record<string, number> | null; // species base stats
   types: string[];
   weak: [string, number][];
   resist: [string, number][];
@@ -42,6 +44,12 @@ export interface PartyMon {
   max_hp: number;
   shiny: boolean;
   item: string | null;
+  abilities: string[];
+  base: Record<string, number> | null;
+  types: string[];
+  weak: [string, number][];
+  resist: [string, number][];
+  immune: string[];
   moves: Move[];
 }
 

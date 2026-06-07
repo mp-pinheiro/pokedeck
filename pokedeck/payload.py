@@ -1,4 +1,15 @@
 """Build JSON-serializable battle payloads for the frontend (decky.emit)."""
+from . import typechart
+
+
+def _typing(types):
+    """weak/resist/immune lists (payload form) for a list of type display names."""
+    w = typechart.weaknesses(types)
+    return {
+        "weak": [[t, m] for t, m in w["weak"]],
+        "resist": [[t, m] for t, m in w["resist"]],
+        "immune": [t for t, _ in w["immune"]],
+    }
 
 
 def move_dict(pd, mid, cur_pp=None):
@@ -18,7 +29,9 @@ def move_dict(pd, mid, cur_pp=None):
 
 
 def mon_to_dict(mon, pd):
-    weak = mon.weaknesses()
+    # Active battlers carry authoritative types straight from RAM (reflect any romhack
+    # retyping); base stats + the species ability list come from the static table.
+    info = pd.info(mon.species)
     moves = [
         move_dict(pd, mid, mon.pp[i] if i < len(mon.pp) else None)
         for i, mid in enumerate(mon.moves) if mid
@@ -33,14 +46,14 @@ def mon_to_dict(mon, pd):
         "status": mon.status1,
         "shiny": mon.is_shiny,
         "ability": pd.ability_name(mon.ability) or (f"#{mon.ability}" if mon.ability else None),
+        "abilities": info.get("abilities", []),
         "item": pd.item_name(mon.item) or (f"#{mon.item}" if mon.item else None),
         "friendship": mon.friendship,
         "ivs": mon.iv_spread if mon.ivs else None,
         "stats": mon.stats,
+        "base": info.get("base") or None,
         "types": mon.types,
-        "weak": [[t, m] for t, m in weak["weak"]],
-        "resist": [[t, m] for t, m in weak["resist"]],
-        "immune": [t for t, _ in weak["immune"]],
+        **_typing(mon.types),
         "moves": moves,
     }
 
@@ -50,6 +63,10 @@ def battle_payload(mons, pd):
 
 
 def party_mon_to_dict(mon, pd):
+    # Box/party structs don't store types; derive them (and weaknesses) from the
+    # species baseline. Active battlers get authoritative types from RAM instead.
+    info = pd.info(mon["species"])
+    types = info.get("types", [])
     moves = [move_dict(pd, mid) for mid in mon["moves"] if mid]
     return {
         "species_id": mon["species"],
@@ -60,6 +77,10 @@ def party_mon_to_dict(mon, pd):
         "max_hp": mon["max_hp"],
         "shiny": mon["shiny"],
         "item": pd.item_name(mon["item"]) or (f"#{mon['item']}" if mon["item"] else None),
+        "abilities": info.get("abilities", []),
+        "base": info.get("base") or None,
+        "types": types,
+        **_typing(types),
         "moves": moves,
     }
 

@@ -18,6 +18,7 @@ class PokeData:
         self.abilities = self._load(data_dir, "abilities.json")
         self.items = self._load(data_dir, "items.json")
         self.nat_dex = self._load(data_dir, "nat_dex.json")
+        self.sp_info = self._load(data_dir, "species_info.json")
 
     @staticmethod
     def _load(data_dir, name):
@@ -40,6 +41,13 @@ class PokeData:
 
     def move(self, move_id):
         return self.moves.get(str(move_id))
+
+    def info(self, species_id):
+        """Species baseline {types, base, abilities} (expansion default). Empty if unknown."""
+        return self.sp_info.get(str(species_id)) or {}
+
+    def species_types(self, species_id):
+        return self.info(species_id).get("types", [])
 
     def ability_name(self, ability_id):
         return self.abilities.get(str(ability_id))

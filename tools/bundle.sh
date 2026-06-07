@@ -12,7 +12,7 @@ rm -rf py_modules/pokedeck defaults/data defaults/web
 mkdir -p py_modules/pokedeck defaults/data/games defaults/web
 
 cp pokedeck/*.py py_modules/pokedeck/
-cp data/species.json data/moves.json data/abilities.json data/items.json data/nat_dex.json defaults/data/
+cp data/species.json data/moves.json data/abilities.json data/items.json data/nat_dex.json data/species_info.json defaults/data/
 cp data/games/*.json defaults/data/games/
 
 if [ -d apps/web/dist ]; then

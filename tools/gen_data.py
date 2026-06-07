@@ -55,6 +55,60 @@ def parse_species_names(paths):
     return names
 
 
+def parse_type_defines(paths):
+    """`#define RALTS_FAMILY_TYPE2 (P_UPDATED_TYPES >= GEN_6 ? TYPE_FAIRY : TYPE_PSYCHIC)`
+    -> {RALTS_FAMILY_TYPE2: TYPE_FAIRY}. Takes the first TYPE_ (the modern/true branch,
+    matching the expansion's default P_UPDATED_TYPES = latest gen)."""
+    def_rx = re.compile(r"#define\s+([A-Z0-9_]*_FAMILY_TYPE\d+)\s+(.+)")
+    type_rx = re.compile(r"TYPE_[A-Z_]+")
+    out = {}
+    for path in paths:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                m = def_rx.search(line)
+                if m:
+                    tm = type_rx.search(m.group(2))
+                    if tm:
+                        out[m.group(1)] = tm.group(0)
+    return out
+
+
+_BASE_KEYS = {
+    "baseHP": "hp", "baseAttack": "atk", "baseDefense": "def",
+    "baseSpAttack": "spa", "baseSpDefense": "spd", "baseSpeed": "spe",
+}
+
+
+def parse_species_info(paths):
+    """SPECIES_X -> {types:[TYPE_*], abilities:[ABILITY_*], base:{stat:int}} (raw consts).
+    Types/base/abilities reflect the expansion baseline (a romhack may retune them;
+    active battlers always read authoritative types/stats straight from RAM)."""
+    header_rx = re.compile(r"\[(SPECIES_[A-Z0-9_]+)\]\s*=")
+    types_rx = re.compile(r"\.types\s*=\s*MON_TYPES\(([^)]*)\)")
+    abil_rx = re.compile(r"\.abilities\s*=\s*\{([^}]*)\}")
+    base_rx = {src: re.compile(r"\." + src + r"\s*=\s*(\d+)") for src in _BASE_KEYS}
+    out = {}
+    for path in paths:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        for const, block in _blocks(text, header_rx):
+            if const in out:
+                continue
+            tm = types_rx.search(block)
+            am = abil_rx.search(block)
+            base = {}
+            for src, dst in _BASE_KEYS.items():
+                bm = base_rx[src].search(block)
+                if bm:
+                    base[dst] = int(bm.group(1))
+            out[const] = {
+                "types": [t.strip() for t in tm.group(1).split(",")] if tm else [],
+                "abilities": [a.strip() for a in am.group(1).split(",")] if am else [],
+                "base": base,
+            }
+    return out
+
+
 def parse_species_natdex(paths):
     """SPECIES_X -> NATIONAL_DEX_X constant, from each species block's .natDexNum."""
     header_rx = re.compile(r"\[(SPECIES_[A-Z0-9_]+)\]\s*=")
@@ -149,6 +203,38 @@ def main():
     ab_names = parse_block_names(os.path.join(src, "abilities_data.h"), "ABILITY")
     abilities = _id_name_table(ab_ids, ab_names, skip=("-------", ""))
 
+    # internal species id -> {types[], base{}, abilities[]} with consts resolved to names.
+    type_defines = parse_type_defines(fam_paths)
+
+    def _resolve_type(tc):
+        tc = type_defines.get(tc, tc)  # *_FAMILY_TYPE* indirection -> TYPE_*
+        if not tc.startswith("TYPE_"):
+            return None
+        key = tc.replace("TYPE_", "")
+        return TYPE_NAME.get(key, key.title())
+
+    def _abil_disp(ac):
+        aid = ab_ids.get(ac)
+        return abilities.get(str(aid)) if aid is not None else None
+
+    species_info = {}
+    for const, info in parse_species_info(fam_paths).items():
+        if const not in sp_ids:
+            continue
+        types = []
+        for tc in info["types"]:
+            d = _resolve_type(tc)
+            if d and d not in ("None", "???") and d not in types:
+                types.append(d)
+        abil = []
+        for ac in info["abilities"]:
+            if ac == "ABILITY_NONE":
+                continue
+            nm = _abil_disp(ac)
+            if nm and nm not in abil:
+                abil.append(nm)
+        species_info[str(sp_ids[const])] = {"types": types, "base": info["base"], "abilities": abil}
+
     it_ids = parse_id_map(os.path.join(src, "items.h"), "ITEM")
     it_names = parse_block_names(os.path.join(src, "items_data.h"), "ITEM")
     items = _id_name_table(it_ids, it_names, skip=("????????", "??????????", ""))
@@ -156,15 +242,16 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     tables = (
         ("species", species), ("moves", moves), ("abilities", abilities),
-        ("items", items), ("nat_dex", nat_dex),
+        ("items", items), ("nat_dex", nat_dex), ("species_info", species_info),
     )
     for name, table in tables:
         with open(os.path.join(out_dir, name + ".json"), "w", encoding="utf-8") as fh:
             json.dump(table, fh, separators=(",", ":"), ensure_ascii=False)
 
     print(f"species:{len(species)} moves:{len(moves)} abilities:{len(abilities)} "
-          f"items:{len(items)} nat_dex:{len(nat_dex)}")
+          f"items:{len(items)} nat_dex:{len(nat_dex)} species_info:{len(species_info)}")
     print("  species 729/268:", species.get("729"), "/", species.get("268"))
+    print("  species_info 729(Brionne):", species_info.get("729"))
     print("  nat_dex 1336(Toedscool)->948? :", nat_dex.get("1336"),
           " 729(Brionne)->729? :", nat_dex.get("729"))
     print("  moves 227/61:", moves.get("227", {}).get("name"), "/", moves.get("61", {}).get("name"))
