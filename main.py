@@ -1,50 +1,50 @@
-"""poke-deck Decky backend: polls RetroArch and pushes battle info to the QAM.
+"""poke-deck Decky backend: polls RetroArch and pushes battle info to the QAM,
+and ALSO hosts the same stdlib HTTP+SSE server (pokedeck.server) so a browser on
+the LAN/Deck can show the battle simultaneously — one poll, two sinks.
 
-Runs on the Steam Deck alongside RetroArch, so it reads memory over direct UDP
-(transport="udp"). The `pokedeck` package must be bundled into py_modules/ and
-the data/ tables + game descriptors under the plugin dir (see tools/bundle.sh).
+Runs on the Steam Deck alongside RetroArch (reads memory over direct UDP). The
+`pokedeck` package goes in py_modules/, data tables + descriptors under data/,
+and the built web SPA under web/ (see tools/bundle.sh).
 """
 import asyncio
 import os
+import threading
 
 import decky
 
-from pokedeck.battle import read_battle
-from pokedeck.descriptor import GameDescriptor
-from pokedeck.payload import battle_payload
+# descriptor.py reads GAMES_DIR at import — point it at the bundled descriptors
+# before importing anything from pokedeck.
+os.environ.setdefault("POKEDECK_GAMES_DIR", os.path.join(decky.DECKY_PLUGIN_DIR, "data", "games"))
+
+from pokedeck.descriptor import resolve_descriptor
 from pokedeck.pokedata import PokeData
-from pokedeck.retroarch import RetroArchClient, RetroArchError
+from pokedeck.retroarch import RetroArchClient
+from pokedeck.server import Hub, Session, make_server, read_payload
 
 DATA_DIR = os.path.join(decky.DECKY_PLUGIN_DIR, "data")
+WEB_DIR = os.path.join(decky.DECKY_PLUGIN_DIR, "web")
+SERVER_PORT = 8420  # avoid Decky's 1337 and Steam CEF's 8080
 NOT_CONNECTED = {"connected": False, "in_battle": False}
 
 
 class Plugin:
     async def get_snapshot(self) -> dict:
-        """Frontend pulls the latest state on QAM open (no waiting for a poll)."""
         return self._latest
 
-    async def set_interval(self, seconds: float) -> bool:
-        self._interval = max(0.2, float(seconds))
-        return True
-
-    def _read_once(self) -> dict:
-        try:
-            in_battle, mons = read_battle(self._client, self._desc)
-        except (RetroArchError, OSError):
-            return NOT_CONNECTED
-        if not in_battle:
-            return {"connected": True, "in_battle": False}
-        return {"connected": True, "in_battle": True, **battle_payload(mons, self._pd)}
+    async def set_game(self, game: str) -> dict:
+        """Frontend-callable: switch the active game descriptor (QAM + browser)."""
+        self._session.set_game(game)
+        return {"game": self._session.descriptor.id}
 
     async def _poll_loop(self):
         decky.logger.info("poke-deck capture loop started")
         while True:
             try:
-                payload = self._read_once()
+                payload = read_payload(self._session)
                 if payload != self._latest:
                     self._latest = payload
-                    await decky.emit("battle_update", payload)
+                    self._hub.publish(payload)          # browsers (SSE)
+                    await decky.emit("battle_update", payload)  # QAM panel
             except Exception:
                 decky.logger.exception("poll error")
             await asyncio.sleep(self._interval)
@@ -52,15 +52,25 @@ class Plugin:
     async def _main(self):
         self.loop = asyncio.get_event_loop()
         self._interval = 0.5
-        self._latest = NOT_CONNECTED
-        self._pd = PokeData(DATA_DIR)
-        self._desc = GameDescriptor.load(os.path.join(DATA_DIR, "games", "pokemon_lazarus.json"))
-        self._client = RetroArchClient(transport="udp")
-        decky.logger.info("poke-deck loaded: game=%s species=%d moves=%d",
-                          self._desc.id, len(self._pd.species), len(self._pd.moves))
+        self._latest = dict(NOT_CONNECTED)
+        pd = PokeData(DATA_DIR)
+        desc = resolve_descriptor("pokemon_lazarus")
+        self._session = Session(RetroArchClient(transport="udp"), desc, pd)
+        self._hub = Hub()
+        self._server = None
+        try:
+            self._server = make_server(self._hub, self._session, port=SERVER_PORT, web_dir=WEB_DIR)
+            threading.Thread(target=self._server.serve_forever, daemon=True).start()
+            decky.logger.info("poke-deck web/SSE server on 127.0.0.1:%d", SERVER_PORT)
+        except OSError as exc:
+            decky.logger.warning("poke-deck web server not started (%s); QAM panel still works", exc)
+        decky.logger.info("poke-deck loaded: game=%s species=%d", desc.id, len(pd.species))
         self._task = self.loop.create_task(self._poll_loop())
 
     async def _unload(self):
+        server = getattr(self, "_server", None)
+        if server is not None:
+            server.shutdown()
         task = getattr(self, "_task", None)
         if task is not None:
             task.cancel()
