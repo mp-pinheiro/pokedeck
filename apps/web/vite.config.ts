@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react";
 // Prod: the Python server serves the built SPA + SSE from one origin (no mixed-content).
 export default defineConfig({
   plugins: [react()],
-  base: "./",
   server: {
     proxy: {
       "/events": { target: "http://127.0.0.1:8420", changeOrigin: true },
@@ -15,7 +14,5 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    // Second entry: /preview.html renders the components with mock data (no server).
-    rollupOptions: { input: { main: "index.html", preview: "preview.html" } },
   },
 });
