@@ -26,9 +26,23 @@ def _fmt_mult(m):
     return f"x{m:g}"
 
 
+_POKEDATA = None
+
+
+def _pd():
+    global _POKEDATA
+    if _POKEDATA is None:
+        from .pokedata import PokeData
+        _POKEDATA = PokeData()
+    return _POKEDATA
+
+
 def print_mon(mon):
+    pd = _pd()
+    name = pd.species_name(mon.species)
+    sp = f"#{mon.species} {name}" if name else f"#{mon.species}"
     print(f"[{mon.side}] battler {mon.battler}")
-    print(f"  species #{mon.species}  Lv{mon.level}  HP {mon.hp}/{mon.max_hp}")
+    print(f"  species {sp}  Lv{mon.level}  HP {mon.hp}/{mon.max_hp}")
     s = mon.stats
     print(f"  stats  ATK{s['attack']} DEF{s['defense']} SPA{s['spAttack']} SPD{s['spDefense']} SPE{s['speed']}")
     print(f"  types  {', '.join(mon.types) or '—'}")
@@ -39,7 +53,13 @@ def print_mon(mon):
         print(f"  resist {', '.join(f'{t} {_fmt_mult(m)}' for t, m in w['resist'])}")
     if w["immune"]:
         print(f"  immune {', '.join(t for t, _ in w['immune'])}")
-    print(f"  moves  {' '.join('#' + str(x) for x in mon.moves) or '—'}")
+    moves = []
+    for mid in mon.moves:
+        if mid == 0:
+            continue
+        mv = pd.move(mid)
+        moves.append(f"{mv['name']} ({mv['type']})" if mv else f"#{mid}")
+    print(f"  moves  {', '.join(moves) or '—'}")
     if mon.status1:
         print(f"  status 0x{mon.status1:08x}")
 
