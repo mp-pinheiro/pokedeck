@@ -58,3 +58,26 @@ Expansion builds relocate every EWRAM symbol, so `gBattleMons` must be found liv
 
 ROMs are never committed (`*.gba` is gitignored). Name tables are generated from
 pokeemerald-expansion (pinned to 1.16.1) via `tools/gen_data.py`.
+
+## Browser app
+
+A standalone React web app (`apps/web`) shows the same live battle info in any
+browser, sharing presentational components with the Decky panel via a pnpm workspace:
+
+- `packages/ui` — shared host-agnostic React (`MonCard`, `BattleView`, `GamePicker`,
+  `useBattleState`) + payload types. `react` is a **peerDependency only** and it imports
+  no `@decky/*`, so the *same source* builds in both hosts (Vite bundles its own React;
+  `@decky/rollup` externalizes React to Steam's `SP_REACT`).
+- `apps/web` — Vite browser shell (SSE transport).
+- `pokedeck/server.py` — stdlib-only HTTP+SSE server reusing the reader (zero deps).
+- `src/index.tsx` — Decky shell, consuming the same `packages/ui` via an `@decky/api` transport.
+
+Run it on the machine where RetroArch is (Network Commands on, mGBA core):
+
+    pnpm install
+    pnpm --filter @poke-deck/web build
+    python3 -m pokedeck.server --game lazarus     # then open http://localhost:8420
+
+The Decky backend (`main.py`) also hosts the same SSE server (port 8420), so the QAM
+panel and a LAN browser show the battle at once. Switch games live via the in-app picker
+(`POST /api/game`) or, in Decky, the `set_game` backend method.
