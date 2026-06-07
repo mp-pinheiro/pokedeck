@@ -14,7 +14,7 @@
     "_note": "Cartridge header is byte-identical to vanilla Emerald (BPEE01). Distinguish by sha1 or the 32MB expanded size; header-based runtime detection cannot tell Lazarus from vanilla Emerald."
   },
   "symbols": {
-    "_note": "Mapped live 2026-06-07 (Brionne vs Cascoon) + deep RE workflow. gBattleStruct (heap pointer, null out of battle) is the in-battle gate; gBattleTypeFlags corrected to 0x020002C0 (vanilla 0x02022FEC reads 0 even mid-battle). The gBattleMons copy at 0x020383BC is passive (no referents). Parties relocate via IWRAM indirection (vanilla addrs read zero); unused by v1.",
+    "_note": "Mapped live 2026-06-07 (Brionne vs Cascoon) + deep RE workflow. gBattleStruct is the in-battle gate: heap pointer in battle, NULL out of battle (BOTH confirmed live). gBattleTypeFlags (corrected to 0x020002C0; vanilla 0x02022FEC reads 0 mid-battle) stays STALE (0xC) out of battle, so do NOT gate on it. gBattleMons[0].species clears to 0 out of battle. The gBattleMons copy at 0x020383BC is passive. Parties relocate via IWRAM indirection; unused by v1.",
     "verified": true,
     "gBattleMons": "0x02000360",
     "gBattleStruct": "0x0200082C",

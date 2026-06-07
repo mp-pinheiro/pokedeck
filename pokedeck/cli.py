@@ -157,11 +157,9 @@ def cmd_live(client, desc, args):
 
 
 def cmd_battle(client, desc, args):
-    flag_addr = desc.symbol("gBattleTypeFlags")
-    flag = int.from_bytes(client.read_memory(flag_addr, 4), "little")
-    state = "in battle" if flag else "not in battle"
-    print(f"gBattleTypeFlags @ 0x{flag_addr:08x} = 0x{flag:08x} ({state})")
-    for mon in read_battlers(client, desc).values():
+    active, mons = read_battle(client, desc)
+    print(f"in battle: {active}")
+    for mon in mons.values():
         print_mon(mon)
 
 
