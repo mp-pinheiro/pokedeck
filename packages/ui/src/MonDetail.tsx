@@ -169,11 +169,6 @@ export function MonDetail({
             {abilityText}
           </div>
         )}
-        {mon.item && (
-          <div>
-            <span style={{ ...HUD_LABEL, marginRight: 6 }}>Item</span>◈ {mon.item}
-          </div>
-        )}
         {active && a.friendship != null && (
           <div>
             <span style={{ ...HUD_LABEL, marginRight: 6 }}>Friendship</span>
@@ -181,6 +176,14 @@ export function MonDetail({
           </div>
         )}
       </div>
+
+      {mon.item && (
+        <div style={{ marginTop: 8, fontSize: "0.86em" }}>
+          <span style={{ ...HUD_LABEL, marginRight: 6 }}>Held item</span>
+          <span style={{ fontWeight: 700 }}>◈ {mon.item}</span>
+          {mon.item_desc && <span style={{ opacity: 0.7 }}> — {mon.item_desc}</span>}
+        </div>
+      )}
 
       {mon.base && (
         <Section title={active ? "Base stats" : "Base stats"}>

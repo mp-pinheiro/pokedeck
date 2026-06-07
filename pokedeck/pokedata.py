@@ -17,6 +17,7 @@ class PokeData:
         self.moves = self._load(data_dir, "moves.json")
         self.abilities = self._load(data_dir, "abilities.json")
         self.items = self._load(data_dir, "items.json")
+        self.items_desc = self._load(data_dir, "items_desc.json")
         self.nat_dex = self._load(data_dir, "nat_dex.json")
         self.sp_info = self._load(data_dir, "species_info.json")
 
@@ -54,3 +55,6 @@ class PokeData:
 
     def item_name(self, item_id):
         return self.items.get(str(item_id))
+
+    def item_desc(self, item_id):
+        return self.items_desc.get(str(item_id))

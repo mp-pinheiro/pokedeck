@@ -25,6 +25,7 @@ export interface Mon {
   ability: string | null;
   abilities: string[]; // species' possible abilities (baseline)
   item: string | null;
+  item_desc: string | null;
   friendship: number;
   ivs: Record<string, number> | null;
   stats: Record<string, number>; // live in-battle stats
@@ -45,6 +46,7 @@ export interface PartyMon {
   max_hp: number;
   shiny: boolean;
   item: string | null;
+  item_desc: string | null;
   abilities: string[];
   base: Record<string, number> | null;
   types: string[];

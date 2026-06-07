@@ -164,13 +164,27 @@ def _field_int(block, key):
     return int(n.group(0)) if n else None
 
 
-def _move_desc(block):
+def _desc_string(block):
+    """`.description = COMPOUND_STRING("a\n" "b.")` -> "a b." (moves and items)."""
     m = _DESC_RX.search(block)
     if not m:
         return None
     text = "".join(_STR_RX.findall(m.group(1)))
     text = text.replace("\\n", " ").replace('\\"', '"').replace("\\\\", "\\")
     return " ".join(text.split()) or None
+
+
+def parse_block_descs(path, prefix):
+    """constant -> effect description, from each `[PREFIX_X] = { .description = ... }`."""
+    header_rx = re.compile(r"\[(" + prefix + r"_[A-Z0-9_]+)\]\s*=")
+    out = {}
+    with open(path, encoding="utf-8") as fh:
+        text = fh.read()
+    for const, block in _blocks(text, header_rx):
+        d = _desc_string(block)
+        if d:
+            out[const] = d
+    return out
 
 
 def parse_moves_info(path):
@@ -194,7 +208,7 @@ def parse_moves_info(path):
             "accuracy": _field_int(block, "accuracy"),
             "pp": _field_int(block, "pp"),
             "priority": _field_int(block, "priority"),
-            "desc": _move_desc(block),
+            "desc": _desc_string(block),
         }
     return out
 
@@ -264,11 +278,14 @@ def main():
     it_ids = parse_id_map(os.path.join(src, "items.h"), "ITEM")
     it_names = parse_block_names(os.path.join(src, "items_data.h"), "ITEM")
     items = _id_name_table(it_ids, it_names, skip=("????????", "??????????", ""))
+    it_descs = parse_block_descs(os.path.join(src, "items_data.h"), "ITEM")
+    items_desc = {str(it_ids[c]): d for c, d in it_descs.items() if c in it_ids and str(it_ids[c]) in items}
 
     os.makedirs(out_dir, exist_ok=True)
     tables = (
         ("species", species), ("moves", moves), ("abilities", abilities),
-        ("items", items), ("nat_dex", nat_dex), ("species_info", species_info),
+        ("items", items), ("items_desc", items_desc),
+        ("nat_dex", nat_dex), ("species_info", species_info),
     )
     for name, table in tables:
         with open(os.path.join(out_dir, name + ".json"), "w", encoding="utf-8") as fh:
@@ -282,7 +299,7 @@ def main():
           " 729(Brionne)->729? :", nat_dex.get("729"))
     print("  moves 227/61:", moves.get("227", {}).get("name"), "/", moves.get("61", {}).get("name"))
     print("  abilities 67/61/19:", abilities.get("67"), "/", abilities.get("61"), "/", abilities.get("19"))
-    print("  items 28:", items.get("28"))
+    print("  items 28:", items.get("28"), "desc:", items_desc.get("28"))
 
 
 if __name__ == "__main__":
