@@ -14,18 +14,18 @@
     "_note": "Cartridge header is byte-identical to vanilla Emerald (BPEE01). Distinguish by sha1 or the 32MB expanded size; header-based runtime detection cannot tell Lazarus from vanilla Emerald."
   },
   "symbols": {
-    "_note": "Vanilla Emerald baseline addresses. Lazarus is a pokeemerald-expansion build and WILL have shifted these. Relocate live (tools/ra_probe.py / cli dump) before trusting.",
-    "verified": false,
+    "_note": "gBattleMons verified live via automap 2026-06-07 (Brionne vs Cascoon, stride 96). A second identical copy reads at 0x020383bc. gPlayerParty/gEnemyParty/gBattleTypeFlags still vanilla and unverified (unused by v1).",
+    "verified": true,
     "gBattleTypeFlags": "0x02022FEC",
-    "gBattleMons": "0x02024084",
+    "gBattleMons": "0x02000360",
     "gPlayerParty": "0x020244EC",
     "gEnemyParty": "0x02024744"
   },
   "battle": {
     "_note": "pokeemerald-expansion BattlePokemon, natural alignment. Field offsets <=0x50 sit in the version-stable prefix. battler_stride (full struct size) is version-sensitive because the variable-size Volatiles blob follows status1, and MUST be measured live.",
     "alignment": "natural",
-    "battler_stride": 104,
-    "stride_verified": false,
+    "battler_stride": 96,
+    "stride_verified": true,
     "battler_count": 4,
     "player_battler": 0,
     "opponent_battler": 1,
