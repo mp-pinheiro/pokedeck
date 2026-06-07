@@ -25,3 +25,5 @@ __pycache__/
 node_modules/
 dist/
 out/
+py_modules/
+defaults/
