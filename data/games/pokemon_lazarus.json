@@ -1,0 +1,50 @@
+{
+  "id": "pokemon_lazarus",
+  "name": "Pokémon Lazarus",
+  "base": "pokeemerald-expansion",
+  "generation": 3,
+  "platform": "GBA",
+  "endianness": "little",
+  "detect": {
+    "gba_title": "POKEMON EMER",
+    "gba_code": "BPEE",
+    "rom_size": 33554432,
+    "sha1": "7dcdc7e280bc4631487e13dd37e6e0cea04adea6",
+    "md5": "65581ef54ca858242db11429f469295f",
+    "_note": "Cartridge header is byte-identical to vanilla Emerald (BPEE01). Distinguish by sha1 or the 32MB expanded size; header-based runtime detection cannot tell Lazarus from vanilla Emerald."
+  },
+  "symbols": {
+    "_note": "Vanilla Emerald baseline addresses. Lazarus is a pokeemerald-expansion build and WILL have shifted these. Relocate live (tools/ra_probe.py / cli dump) before trusting.",
+    "verified": false,
+    "gBattleTypeFlags": "0x02022FEC",
+    "gBattleMons": "0x02024084",
+    "gPlayerParty": "0x020244EC",
+    "gEnemyParty": "0x02024744"
+  },
+  "battle": {
+    "_note": "pokeemerald-expansion BattlePokemon, natural alignment. Field offsets <=0x50 sit in the version-stable prefix. battler_stride (full struct size) is version-sensitive because the variable-size Volatiles blob follows status1, and MUST be measured live.",
+    "alignment": "natural",
+    "battler_stride": 104,
+    "stride_verified": false,
+    "battler_count": 4,
+    "player_battler": 0,
+    "opponent_battler": 1,
+    "type_table": "expansion",
+    "fields": {
+      "species":   {"off": "0x00", "size": 2},
+      "attack":    {"off": "0x02", "size": 2},
+      "defense":   {"off": "0x04", "size": 2},
+      "speed":     {"off": "0x06", "size": 2},
+      "spAttack":  {"off": "0x08", "size": 2},
+      "spDefense": {"off": "0x0A", "size": 2},
+      "moves":     {"off": "0x0C", "size": 2, "count": 4},
+      "type1":     {"off": "0x22", "size": 1},
+      "type2":     {"off": "0x23", "size": 1},
+      "type3":     {"off": "0x24", "size": 1},
+      "hp":        {"off": "0x2A", "size": 2},
+      "level":     {"off": "0x2C", "size": 1},
+      "maxHP":     {"off": "0x2E", "size": 2},
+      "status1":   {"off": "0x50", "size": 4}
+    }
+  }
+}

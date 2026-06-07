@@ -1,0 +1,47 @@
+{
+  "id": "pokemon_emerald",
+  "name": "Pokémon Emerald (USA)",
+  "base": "pokeemerald",
+  "generation": 3,
+  "platform": "GBA",
+  "endianness": "little",
+  "detect": {
+    "gba_title": "POKEMON EMER",
+    "gba_code": "BPEE",
+    "rom_size": 16777216,
+    "_note": "No-Intro Pokémon Emerald (USA, Europe). Used to validate the battle parser against known-good vanilla offsets."
+  },
+  "symbols": {
+    "_note": "From pret/pokeemerald committed symbol table (USA). EWRAM addresses are revision-stable.",
+    "verified": true,
+    "gBattleTypeFlags": "0x02022FEC",
+    "gBattleMons": "0x02024084",
+    "gPlayerParty": "0x020244EC",
+    "gEnemyParty": "0x02024744"
+  },
+  "battle": {
+    "_note": "Vanilla pokeemerald BattlePokemon, 88 bytes (0x58). No third type slot.",
+    "alignment": "natural",
+    "battler_stride": 88,
+    "stride_verified": true,
+    "battler_count": 4,
+    "player_battler": 0,
+    "opponent_battler": 1,
+    "type_table": "vanilla",
+    "fields": {
+      "species":   {"off": "0x00", "size": 2},
+      "attack":    {"off": "0x02", "size": 2},
+      "defense":   {"off": "0x04", "size": 2},
+      "speed":     {"off": "0x06", "size": 2},
+      "spAttack":  {"off": "0x08", "size": 2},
+      "spDefense": {"off": "0x0A", "size": 2},
+      "moves":     {"off": "0x0C", "size": 2, "count": 4},
+      "type1":     {"off": "0x21", "size": 1},
+      "type2":     {"off": "0x22", "size": 1},
+      "hp":        {"off": "0x28", "size": 2},
+      "level":     {"off": "0x2A", "size": 1},
+      "maxHP":     {"off": "0x2C", "size": 2},
+      "status1":   {"off": "0x4C", "size": 4}
+    }
+  }
+}
