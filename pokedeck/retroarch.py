@@ -47,21 +47,33 @@ class RetroArchClient:
                 info["crc"] = segs[-1].replace("crc32=", "")
         return info
 
-    def read_memory(self, address, num_bytes, chunk=256):
-        """Read num_bytes from an emulated address, chunked to fit UDP datagrams."""
+    def read_memory(self, address, num_bytes, chunk=256, retries=3):
+        """Read num_bytes from an emulated address in small chunks.
+
+        Large reads can exceed RetroArch's reply buffer and get no response, so
+        keep chunk small (<=256 verified working). Each chunk retries on timeout.
+        """
         out = bytearray()
         offset = 0
         while offset < num_bytes:
             n = min(chunk, num_bytes - offset)
-            out += self._read_chunk(address + offset, n)
+            out += self._read_chunk(address + offset, n, retries)
             offset += n
         return bytes(out)
 
-    def _read_chunk(self, address, num_bytes):
-        reply = self._command(f"READ_CORE_MEMORY {address:x} {num_bytes}")
-        parts = reply.split()
-        if len(parts) < 3 or parts[0] != "READ_CORE_MEMORY":
-            raise RetroArchError(f"unexpected reply: {reply!r}")
-        if parts[2] == "-1":
-            raise RetroArchError(f"core read failed @ 0x{address:x}: {' '.join(parts[2:])}")
-        return bytes(int(b, 16) for b in parts[2:])
+    def _read_chunk(self, address, num_bytes, retries=3):
+        for _ in range(retries):
+            try:
+                reply = self._command(f"READ_CORE_MEMORY {address:x} {num_bytes}")
+            except socket.timeout:
+                continue
+            parts = reply.split()
+            if len(parts) < 3 or parts[0] != "READ_CORE_MEMORY":
+                raise RetroArchError(f"unexpected reply: {reply!r}")
+            if parts[2] == "-1":
+                raise RetroArchError(f"core read failed @ 0x{address:x}: {' '.join(parts[2:])}")
+            data = bytes(int(b, 16) for b in parts[2:])
+            if len(data) != num_bytes:
+                raise RetroArchError(f"short read @ 0x{address:x}: got {len(data)} of {num_bytes} bytes")
+            return data
+        raise TimeoutError(f"no reply after {retries} tries @ 0x{address:x}")

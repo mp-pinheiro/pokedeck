@@ -92,3 +92,20 @@ def read_battlers(client, descriptor, sides=("player", "opponent")):
         buf = block[idx * stride: (idx + 1) * stride]
         out[side] = parse_battler(buf, descriptor, idx, side)
     return out
+
+
+def find_battle_mon(data, start_addr, hp, level, maxhp):
+    """Locate the active BattlePokemon by the (hp, +2 level, +4 maxHP) signature.
+
+    Returns absolute addresses of matching hp fields. Alignment-agnostic: the
+    relative spacing of hp/level/maxHP is identical for natural and packed
+    layouts, so the gBattleMons base is hp_addr minus the hp offset (0x2A or 0x29).
+    """
+    hp_bytes = hp.to_bytes(2, "little")
+    hits = []
+    i = data.find(hp_bytes)
+    while i != -1:
+        if i + 6 <= len(data) and data[i + 2] == level and int.from_bytes(data[i + 4:i + 6], "little") == maxhp:
+            hits.append(start_addr + i)
+        i = data.find(hp_bytes, i + 1)
+    return hits
