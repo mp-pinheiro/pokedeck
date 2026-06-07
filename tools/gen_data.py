@@ -150,6 +150,20 @@ _DESC_RX = re.compile(r'\.description\s*=\s*COMPOUND_STRING\(\s*((?:"(?:[^"\\]|\
 _STR_RX = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 
+def _field_int(block, key):
+    """Integer for `.<key> = <expr>,`. Handles config ternaries
+    (`COND >= GEN_X ? new : old` -> new) and #if-guarded variants (the first
+    value listed is the active/modern one in the expansion's default config)."""
+    m = re.search(r"\." + key + r"\s*=\s*([^,\n]+)", block)
+    if not m:
+        return None
+    val = m.group(1)
+    if "?" in val:  # take the true branch, before ':' (avoids matching GEN_5's digit)
+        val = val.split("?", 1)[1].split(":", 1)[0]
+    n = re.search(r"-?\d+", val)
+    return int(n.group(0)) if n else None
+
+
 def _move_desc(block):
     m = _DESC_RX.search(block)
     if not m:
@@ -163,8 +177,6 @@ def parse_moves_info(path):
     header_rx = re.compile(r"\[(MOVE_[A-Z0-9_]+)\]\s*=")
     type_rx = re.compile(r"\.type\s*=\s*TYPE_([A-Z_]+)")
     cat_rx = re.compile(r"\.category\s*=\s*DAMAGE_CATEGORY_([A-Z]+)")
-    # power/accuracy/pp/priority are plain ints (accuracy 0 = bypasses accuracy check)
-    int_rx = {k: re.compile(r"\." + k + r"\s*=\s*(-?\d+)") for k in ("power", "accuracy", "pp", "priority")}
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     out = {}
@@ -174,15 +186,14 @@ def parse_moves_info(path):
             continue
         ty = type_rx.search(block)
         ct = cat_rx.search(block)
-        nums = {k: (int(r.search(block).group(1)) if r.search(block) else None) for k, r in int_rx.items()}
         out[const] = {
             "name": m.group(1),
             "type": TYPE_NAME.get(ty.group(1), ty.group(1).title()) if ty else None,
             "category": ct.group(1).lower() if ct else None,
-            "power": nums["power"],
-            "accuracy": nums["accuracy"],
-            "pp": nums["pp"],
-            "priority": nums["priority"],
+            "power": _field_int(block, "power"),
+            "accuracy": _field_int(block, "accuracy"),
+            "pp": _field_int(block, "pp"),
+            "priority": _field_int(block, "priority"),
             "desc": _move_desc(block),
         }
     return out
