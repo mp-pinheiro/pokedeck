@@ -1,24 +1,18 @@
 import type { PartyMon } from "./types";
+import { openProps } from "./interactive";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
-import { typeColor, genInfo } from "./theme";
+import { typeColor, genInfo, HUD_LABEL } from "./theme";
 
-const HUD_LABEL = {
-  fontSize: "0.6em",
-  fontWeight: 700,
-  letterSpacing: 1.5,
-  textTransform: "uppercase",
-  opacity: 0.45,
-} as const;
-
-function PartyRow({ m }: { m: PartyMon }) {
+function PartyRow({ m, onOpen }: { m: PartyMon; onOpen?: () => void }) {
   const dex = m.dex ?? m.species_id;
   const gen = genInfo(dex);
   const accent = typeColor(m.types[0]);
   const fainted = m.hp <= 0;
   return (
     <div
+      {...openProps(onOpen)}
       style={{
         display: "flex",
         gap: 10,
@@ -28,6 +22,7 @@ function PartyRow({ m }: { m: PartyMon }) {
         border: "1px solid #ffffff10",
         borderLeft: `3px solid ${accent}`,
         opacity: fainted ? 0.5 : 1,
+        cursor: onOpen ? "pointer" : undefined,
       }}
     >
       <Sprite id={dex} size={46} alt={m.species} />
@@ -71,14 +66,22 @@ function PartyRow({ m }: { m: PartyMon }) {
   );
 }
 
-export function PartyView({ party, label }: { party?: PartyMon[]; label?: string }) {
+export function PartyView({
+  party,
+  label,
+  onSelect,
+}: {
+  party?: PartyMon[];
+  label?: string;
+  onSelect?: (index: number) => void;
+}) {
   if (!party || party.length === 0) return null;
   return (
     <div style={{ marginTop: 14 }}>
       {label && <div style={{ ...HUD_LABEL, marginBottom: 6 }}>{label}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {party.map((m, i) => (
-          <PartyRow key={i} m={m} />
+          <PartyRow key={i} m={m} onOpen={onSelect && (() => onSelect(i))} />
         ))}
       </div>
     </div>

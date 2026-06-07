@@ -12,6 +12,15 @@ export function typeColor(t: string | null | undefined): string {
   return (t && TYPE_COLORS[t]) || "#6b7280";
 }
 
+// Small uppercase section label used across cards/detail.
+export const HUD_LABEL = {
+  fontSize: "0.6em",
+  fontWeight: 700,
+  letterSpacing: 1.5,
+  textTransform: "uppercase",
+  opacity: 0.45,
+} as const;
+
 export function hpColor(pct: number): string {
   return pct > 50 ? "#46c66a" : pct > 20 ? "#f0b73c" : "#e8533f";
 }

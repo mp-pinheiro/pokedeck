@@ -2,5 +2,7 @@ export type { Move, Mon, PartyMon, BattleState, BattleListener, BattleTransport,
 export { MonCard } from "./MonCard";
 export { BattleView } from "./BattleView";
 export { PartyView } from "./PartyView";
+export { MonDetail } from "./MonDetail";
+export { BattleScreen } from "./BattleScreen";
 export { GamePicker } from "./GamePicker";
 export { useBattleState } from "./useBattleState";

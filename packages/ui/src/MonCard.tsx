@@ -1,4 +1,5 @@
 import type { Mon } from "./types";
+import { openProps } from "./interactive";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -13,13 +14,14 @@ const HUD_LABEL = {
   opacity: 0.45,
 } as const;
 
-export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
+export function MonCard({ mon, label, onOpen }: { mon: Mon; label?: string; onOpen?: () => void }) {
   const accent = typeColor(mon.types[0]);
   const status = statusInfo(mon.status);
   const dex = mon.dex ?? mon.species_id;
   const gen = genInfo(dex);
   return (
     <div
+      {...openProps(onOpen)}
       style={{
         display: "flex",
         gap: 12,
@@ -29,6 +31,7 @@ export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
         border: "1px solid #ffffff12",
         borderLeft: `3px solid ${accent}`,
         boxShadow: `0 12px 30px -18px ${accent}, inset 0 1px 0 #ffffff0a`,
+        cursor: onOpen ? "pointer" : undefined,
       }}
     >
       <Sprite id={dex} size={76} alt={mon.species} />
