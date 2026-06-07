@@ -1,20 +1,28 @@
 """Build JSON-serializable battle payloads for the frontend (decky.emit)."""
 
 
+def move_dict(pd, mid, cur_pp=None):
+    """One move's display payload. cur_pp is the live remaining PP (None off-RAM)."""
+    mv = pd.move(mid)
+    return {
+        "id": mid,
+        "name": mv["name"] if mv else f"#{mid}",
+        "type": mv["type"] if mv else None,
+        "category": mv["category"] if mv else None,
+        "power": mv.get("power") if mv else None,
+        "accuracy": mv.get("accuracy") if mv else None,
+        "priority": mv.get("priority") if mv else None,
+        "pp_max": mv.get("pp") if mv else None,
+        "pp": cur_pp,
+    }
+
+
 def mon_to_dict(mon, pd):
     weak = mon.weaknesses()
-    moves = []
-    for i, mid in enumerate(mon.moves):
-        if not mid:
-            continue
-        mv = pd.move(mid)
-        moves.append({
-            "id": mid,
-            "name": mv["name"] if mv else f"#{mid}",
-            "type": mv["type"] if mv else None,
-            "category": mv["category"] if mv else None,
-            "pp": mon.pp[i] if i < len(mon.pp) else None,
-        })
+    moves = [
+        move_dict(pd, mid, mon.pp[i] if i < len(mon.pp) else None)
+        for i, mid in enumerate(mon.moves) if mid
+    ]
     return {
         "species_id": mon.species,
         "dex": pd.national_dex(mon.species),
@@ -42,12 +50,7 @@ def battle_payload(mons, pd):
 
 
 def party_mon_to_dict(mon, pd):
-    moves = []
-    for mid in mon["moves"]:
-        if not mid:
-            continue
-        mv = pd.move(mid)
-        moves.append({"id": mid, "name": mv["name"] if mv else f"#{mid}", "type": mv["type"] if mv else None})
+    moves = [move_dict(pd, mid) for mid in mon["moves"] if mid]
     return {
         "species_id": mon["species"],
         "dex": pd.national_dex(mon["species"]),

@@ -2,6 +2,7 @@ import type { Mon } from "./types";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
+import { MoveList } from "./MoveList";
 import { typeColor, statusInfo, genInfo } from "./theme";
 
 const HUD_LABEL = {
@@ -85,16 +86,7 @@ export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
             ))}
           </div>
         )}
-        {mon.moves.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-            {mon.moves.map((mv, i) => (
-              <Pill key={i} bg={`${typeColor(mv.type)}30`} color="#e7eef6" title={mv.type ?? undefined}>
-                {mv.name}
-                {mv.pp != null ? ` · ${mv.pp}` : ""}
-              </Pill>
-            ))}
-          </div>
-        )}
+        <MoveList moves={mon.moves} />
       </div>
     </div>
   );

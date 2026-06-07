@@ -95,6 +95,8 @@ def parse_moves_info(path):
     header_rx = re.compile(r"\[(MOVE_[A-Z0-9_]+)\]\s*=")
     type_rx = re.compile(r"\.type\s*=\s*TYPE_([A-Z_]+)")
     cat_rx = re.compile(r"\.category\s*=\s*DAMAGE_CATEGORY_([A-Z]+)")
+    # power/accuracy/pp/priority are plain ints (accuracy 0 = bypasses accuracy check)
+    int_rx = {k: re.compile(r"\." + k + r"\s*=\s*(-?\d+)") for k in ("power", "accuracy", "pp", "priority")}
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     out = {}
@@ -104,10 +106,15 @@ def parse_moves_info(path):
             continue
         ty = type_rx.search(block)
         ct = cat_rx.search(block)
+        nums = {k: (int(r.search(block).group(1)) if r.search(block) else None) for k, r in int_rx.items()}
         out[const] = {
             "name": m.group(1),
             "type": TYPE_NAME.get(ty.group(1), ty.group(1).title()) if ty else None,
             "category": ct.group(1).lower() if ct else None,
+            "power": nums["power"],
+            "accuracy": nums["accuracy"],
+            "pp": nums["pp"],
+            "priority": nums["priority"],
         }
     return out
 

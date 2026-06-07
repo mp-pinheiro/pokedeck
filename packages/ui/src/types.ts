@@ -4,8 +4,12 @@ export interface Move {
   id: number;
   name: string;
   type: string | null;
-  category: string | null;
-  pp: number | null;
+  category: string | null; // "physical" | "special" | "status"
+  power: number | null; // 0 for status moves
+  accuracy: number | null; // 0 = bypasses the accuracy check (always hits)
+  priority: number | null;
+  pp_max: number | null;
+  pp: number | null; // live remaining PP; null when read off-RAM (bench mons)
 }
 
 export interface Mon {
@@ -38,7 +42,7 @@ export interface PartyMon {
   max_hp: number;
   shiny: boolean;
   item: string | null;
-  moves: { id: number; name: string; type: string | null }[];
+  moves: Move[];
 }
 
 export interface BattleState {
