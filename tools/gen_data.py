@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate data/species.json and data/moves.json from pokeemerald-expansion
+"""Generate data/{species,moves,abilities,items}.json from pokeemerald-expansion
 source headers (pin to a release tag, e.g. expansion/1.16.1).
 
   python3 tools/gen_data.py <exp_src_dir> [out_dir]
 
-<exp_src_dir> must contain: species.h, moves.h, moves_info.h, gen_1..9_families.h
+<exp_src_dir> must contain: species.h, moves.h, moves_info.h, gen_1..9_families.h,
+abilities.h, abilities_data.h, items.h, items_data.h
 """
 import json
 import os
@@ -19,6 +20,9 @@ TYPE_NAME = {
     "ELECTRIC": "Electric", "PSYCHIC": "Psychic", "ICE": "Ice", "DRAGON": "Dragon",
     "DARK": "Dark", "FAIRY": "Fairy", "STELLAR": "Stellar",
 }
+
+# .name = _("X") | COMPOUND_STRING("X") | ITEM_NAME("X") -> "X"; non-string macros skip
+NAME_RX = re.compile(r'\.name\s*=\s*[A-Za-z_]*\("((?:[^"\\]|\\.)*)"\)')
 
 
 def parse_id_map(path, prefix):
@@ -50,16 +54,28 @@ def parse_species_names(paths):
     return names
 
 
+def parse_block_names(path, prefix):
+    """constant -> display name, from `[PREFIX_X] = { .name = MACRO("Name") }`."""
+    header_rx = re.compile(r"\[(" + prefix + r"_[A-Z0-9_]+)\]\s*=")
+    out = {}
+    with open(path, encoding="utf-8") as fh:
+        text = fh.read()
+    for const, block in _blocks(text, header_rx):
+        m = NAME_RX.search(block)
+        if m:
+            out[const] = m.group(1)
+    return out
+
+
 def parse_moves_info(path):
     header_rx = re.compile(r"\[(MOVE_[A-Z0-9_]+)\]\s*=")
-    name_rx = re.compile(r'\.name\s*=\s*COMPOUND_STRING\("((?:[^"\\]|\\.)*)"\)')
     type_rx = re.compile(r"\.type\s*=\s*TYPE_([A-Z_]+)")
     cat_rx = re.compile(r"\.category\s*=\s*DAMAGE_CATEGORY_([A-Z]+)")
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     out = {}
     for const, block in _blocks(text, header_rx):
-        m = name_rx.search(block)
+        m = NAME_RX.search(block)
         if not m:
             continue
         ty = type_rx.search(block)
@@ -72,37 +88,40 @@ def parse_moves_info(path):
     return out
 
 
+def _id_name_table(ids, names, skip=()):
+    return {str(i): names[c] for c, i in ids.items() if c in names and names[c] not in skip}
+
+
 def main():
     src = sys.argv[1]
     out_dir = sys.argv[2] if len(sys.argv) > 2 else "data"
 
     sp_ids = parse_id_map(os.path.join(src, "species.h"), "SPECIES")
     sp_names = parse_species_names([os.path.join(src, f"gen_{g}_families.h") for g in range(1, 10)])
-    species = {}
-    for const, sid in sp_ids.items():
-        name = sp_names.get(const)
-        if name and name not in ("-", "??????????"):
-            species[str(sid)] = name
+    species = _id_name_table(sp_ids, sp_names, skip=("-", "??????????"))
 
     mv_ids = parse_id_map(os.path.join(src, "moves.h"), "MOVE")
     mv_info = parse_moves_info(os.path.join(src, "moves_info.h"))
-    moves = {}
-    for const, mid in mv_ids.items():
-        info = mv_info.get(const)
-        if info and info["name"] not in ("-",):
-            moves[str(mid)] = info
+    moves = {str(mid): mv_info[c] for c, mid in mv_ids.items() if c in mv_info and mv_info[c]["name"] != "-"}
+
+    ab_ids = parse_id_map(os.path.join(src, "abilities.h"), "ABILITY")
+    ab_names = parse_block_names(os.path.join(src, "abilities_data.h"), "ABILITY")
+    abilities = _id_name_table(ab_ids, ab_names, skip=("-------", ""))
+
+    it_ids = parse_id_map(os.path.join(src, "items.h"), "ITEM")
+    it_names = parse_block_names(os.path.join(src, "items_data.h"), "ITEM")
+    items = _id_name_table(it_ids, it_names, skip=("????????", "??????????", ""))
 
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "species.json"), "w", encoding="utf-8") as fh:
-        json.dump(species, fh, separators=(",", ":"), ensure_ascii=False)
-    with open(os.path.join(out_dir, "moves.json"), "w", encoding="utf-8") as fh:
-        json.dump(moves, fh, separators=(",", ":"), ensure_ascii=False)
+    for name, table in (("species", species), ("moves", moves), ("abilities", abilities), ("items", items)):
+        with open(os.path.join(out_dir, name + ".json"), "w", encoding="utf-8") as fh:
+            json.dump(table, fh, separators=(",", ":"), ensure_ascii=False)
 
-    print(f"species: {len(species)} entries (from {len(sp_ids)} ids, {len(sp_names)} names)")
-    print(f"moves:   {len(moves)} entries (from {len(mv_ids)} ids, {len(mv_info)} info)")
-    print("  species 1 / 25 / 260 / 268:",
-          species.get("1"), "/", species.get("25"), "/", species.get("260"), "/", species.get("268"))
-    print("  moves 1 / 55:", moves.get("1"), "/", moves.get("55"))
+    print(f"species:{len(species)} moves:{len(moves)} abilities:{len(abilities)} items:{len(items)}")
+    print("  species 729/268:", species.get("729"), "/", species.get("268"))
+    print("  moves 227/61:", moves.get("227", {}).get("name"), "/", moves.get("61", {}).get("name"))
+    print("  abilities 67/61/19:", abilities.get("67"), "/", abilities.get("61"), "/", abilities.get("19"))
+    print("  items 28:", items.get("28"))
 
 
 if __name__ == "__main__":
