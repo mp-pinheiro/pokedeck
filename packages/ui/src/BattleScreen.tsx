@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BattleState, Mon, PartyMon } from "./types";
+import type { BattleState, FetchSpecies, Mon, PartyMon } from "./types";
 import { BattleView } from "./BattleView";
 import { PartyView } from "./PartyView";
 import { MonDetail } from "./MonDetail";
@@ -27,13 +27,25 @@ function resolve(
   return mon ? { mon, active: false, subtitle: sel.group === "party" ? "Your team" : "Opponent team" } : null;
 }
 
-export function BattleScreen({ state }: { state: BattleState | null }) {
+export function BattleScreen({
+  state,
+  fetchSpecies,
+}: {
+  state: BattleState | null;
+  fetchSpecies?: FetchSpecies;
+}) {
   const [sel, setSel] = useState<Sel | null>(null);
   const picked = sel ? resolve(state, sel) : null;
 
   if (picked) {
     return (
-      <MonDetail mon={picked.mon} active={picked.active} subtitle={picked.subtitle} onBack={() => setSel(null)} />
+      <MonDetail
+        mon={picked.mon}
+        active={picked.active}
+        subtitle={picked.subtitle}
+        onBack={() => setSel(null)}
+        fetchSpecies={fetchSpecies}
+      />
     );
   }
 

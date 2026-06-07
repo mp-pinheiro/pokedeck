@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { BattleScreen, GamePicker, useBattleState } from "@poke-deck/ui";
-import type { Game } from "@poke-deck/ui";
+import type { Game, SpeciesExtra } from "@poke-deck/ui";
 import { sseTransport } from "./sseTransport";
+
+const fetchSpecies = (dex: number): Promise<SpeciesExtra | null> =>
+  fetch(`/api/species/${dex}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
 
 export function App() {
   const transport = useMemo(() => sseTransport("/events"), []);
@@ -53,7 +58,7 @@ export function App() {
         <span style={{ flex: 1 }} />
         <GamePicker games={info.games} current={info.game} onSelect={selectGame} />
       </header>
-      <BattleScreen state={state} />
+      <BattleScreen state={state} fetchSpecies={fetchSpecies} />
     </div>
   );
 }

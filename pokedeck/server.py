@@ -19,6 +19,7 @@ from .battle import read_battle
 from .descriptor import list_games, resolve_game
 from .party import read_party
 from .payload import battle_payload, party_payload
+from .pokeapi import species_extra
 from .pokedata import PokeData
 from .retroarch import RetroArchClient, RetroArchError
 
@@ -159,6 +160,12 @@ def make_handler(hub, session, web_dir):
                 return self._json(hub.latest)
             if path == "/api/info":
                 return self._json(self._info())
+            if path.startswith("/api/species/"):
+                try:
+                    dex = int(path.rsplit("/", 1)[1])
+                except (ValueError, IndexError):
+                    return self._json({"error": "bad dex"}, 400)
+                return self._json(species_extra(dex))  # null when unreachable; cached on success
             rel = path.lstrip("/") or "index.html"
             root = os.path.realpath(web_dir)
             full = os.path.realpath(os.path.join(root, rel))

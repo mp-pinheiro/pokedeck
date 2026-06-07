@@ -21,6 +21,9 @@ data/*.gba
 __pycache__/
 *.pyc
 
+# PokeAPI disk cache (runtime-generated)
+data/cache/
+
 # Node / Decky build
 node_modules/
 dist/

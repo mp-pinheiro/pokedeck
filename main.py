@@ -12,11 +12,14 @@ import threading
 
 import decky
 
-# descriptor.py reads GAMES_DIR at import — point it at the bundled descriptors
-# before importing anything from pokedeck.
+# descriptor.py / pokeapi.py read their dirs at import — point them at the bundled
+# descriptors and a writable cache before importing anything from pokedeck.
 os.environ.setdefault("POKEDECK_GAMES_DIR", os.path.join(decky.DECKY_PLUGIN_DIR, "data", "games"))
+_RUNTIME = getattr(decky, "DECKY_PLUGIN_RUNTIME_DIR", None) or os.path.join(decky.DECKY_PLUGIN_DIR, "data")
+os.environ.setdefault("POKEDECK_CACHE_DIR", os.path.join(_RUNTIME, "pokeapi"))
 
 from pokedeck.descriptor import resolve_game
+from pokedeck.pokeapi import species_extra
 from pokedeck.pokedata import PokeData
 from pokedeck.retroarch import RetroArchClient
 from pokedeck.server import Hub, Session, make_server, read_payload
@@ -38,6 +41,15 @@ class Plugin:
 
     async def get_snapshot(self) -> dict:
         return self._latest
+
+    async def get_species(self, dex: int) -> dict:
+        """Frontend-callable PokeAPI lookup (flavor/evolution/sprites), disk-cached.
+        Runs the blocking fetch off the event loop. Returns {} when unreachable."""
+        try:
+            return await asyncio.to_thread(species_extra, dex) or {}
+        except Exception:
+            decky.logger.exception("get_species failed")
+            return {}
 
     async def set_game(self, game: str) -> dict:
         """Frontend-callable: switch the active game descriptor (QAM + browser)."""

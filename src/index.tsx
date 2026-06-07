@@ -3,7 +3,13 @@ import { addEventListener, removeEventListener, call, definePlugin } from "@deck
 import { useMemo } from "react";
 import { FaBolt } from "react-icons/fa";
 import { BattleScreen, useBattleState } from "@poke-deck/ui";
-import type { BattleListener, BattleState, BattleTransport } from "@poke-deck/ui";
+import type { BattleListener, BattleState, BattleTransport, SpeciesExtra } from "@poke-deck/ui";
+
+// PokeAPI lookup via the backend (disk-cached). Backend returns {} when offline.
+const fetchSpecies = (dex: number): Promise<SpeciesExtra | null> =>
+  call<[number], SpeciesExtra | Record<string, never>>("get_species", dex)
+    .then((d) => ((d as SpeciesExtra)?.dex ? (d as SpeciesExtra) : null))
+    .catch(() => null);
 
 // Decky transport: the Python backend pushes via decky.emit("battle_update");
 // pull a snapshot once on open so the panel isn't empty.
@@ -23,7 +29,7 @@ function Content() {
   return (
     <PanelSection title="Poke Deck">
       <PanelSectionRow>
-        <BattleScreen state={state} />
+        <BattleScreen state={state} fetchSpecies={fetchSpecies} />
       </PanelSectionRow>
     </PanelSection>
   );

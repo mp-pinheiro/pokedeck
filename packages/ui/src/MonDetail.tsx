@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import type { Mon, PartyMon } from "./types";
+import type { FetchSpecies, Mon, PartyMon, SpeciesExtra } from "./types";
+import { Pokedex } from "./Pokedex";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -63,15 +65,31 @@ export function MonDetail({
   active,
   subtitle,
   onBack,
+  fetchSpecies,
 }: {
   mon: Mon | PartyMon;
   active: boolean;
   subtitle?: string;
   onBack: () => void;
+  fetchSpecies?: FetchSpecies;
 }) {
   const a = mon as Partial<Mon>; // active-only fields read optionally
   const dex = mon.dex ?? mon.species_id;
   const gen = genInfo(dex);
+
+  // Reference layer (PokeAPI) — undefined = loading, null = unavailable/offline.
+  const [extra, setExtra] = useState<SpeciesExtra | null | undefined>(undefined);
+  useEffect(() => {
+    if (!fetchSpecies) return;
+    let live = true;
+    setExtra(undefined);
+    fetchSpecies(dex)
+      .then((d) => live && setExtra(d))
+      .catch(() => live && setExtra(null));
+    return () => {
+      live = false;
+    };
+  }, [dex, fetchSpecies]);
   const accent = typeColor(mon.types[0]);
   const status = active ? statusInfo(a.status ?? 0) : null;
   const abilityText = active ? a.ability : mon.abilities.join(" / ") || null;
@@ -184,6 +202,8 @@ export function MonDetail({
           <MoveList moves={mon.moves} />
         </Section>
       )}
+
+      {fetchSpecies && <Pokedex extra={extra} species={mon.species} accent={accent} />}
     </div>
   );
 }

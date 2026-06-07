@@ -67,6 +67,25 @@ export interface Game {
   name: string;
 }
 
+// PokeAPI reference layer (from the backend /api/species proxy) — must match
+// pokedeck/pokeapi.py species_extra().
+export interface SpeciesExtra {
+  dex: number;
+  genus: string | null;
+  flavor: string | null;
+  height_m: number;
+  weight_kg: number;
+  base_exp: number | null;
+  capture_rate: number | null;
+  gender_rate: number; // -1 = genderless, else female eighths
+  egg_groups: string[];
+  evolution: string[];
+  sprites: { front: string | null; shiny: string | null; artwork: string | null; home: string | null };
+}
+
+// Host-injected lookup: web hits the HTTP proxy, Decky calls the backend method.
+export type FetchSpecies = (dex: number) => Promise<SpeciesExtra | null>;
+
 export type BattleListener = (state: BattleState) => void;
 
 // Host-supplied transport: browser implements it over SSE/WebSocket, Decky over @decky/api events.
