@@ -1,9 +1,17 @@
-import { PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
+import { Focusable, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
 import { addEventListener, removeEventListener, call, definePlugin } from "@decky/api";
 import { useMemo } from "react";
 import { FaBolt } from "react-icons/fa";
-import { BattleScreen, useBattleState } from "@poke-deck/ui";
-import type { BattleListener, BattleState, BattleTransport, SpeciesExtra } from "@poke-deck/ui";
+import { BattleScreen, InteractiveProvider, useBattleState } from "@poke-deck/ui";
+import type { BattleListener, BattleState, BattleTransport, PressableRenderer, SpeciesExtra } from "@poke-deck/ui";
+
+// Make shared cards/rows/Back reachable by the Steam gamepad: render them as
+// @decky/ui <Focusable> (onActivate = the A button) instead of plain divs.
+const deckyPressable: PressableRenderer = ({ onPress, children, style }) => (
+  <Focusable onActivate={() => onPress()} onClick={() => onPress()} style={style}>
+    {children}
+  </Focusable>
+);
 
 // PokeAPI lookup via the backend (disk-cached). Backend returns {} when offline.
 const fetchSpecies = (dex: number): Promise<SpeciesExtra | null> =>
@@ -29,7 +37,9 @@ function Content() {
   return (
     <PanelSection title="Poke Deck">
       <PanelSectionRow>
-        <BattleScreen state={state} fetchSpecies={fetchSpecies} />
+        <InteractiveProvider value={deckyPressable}>
+          <BattleScreen state={state} fetchSpecies={fetchSpecies} />
+        </InteractiveProvider>
       </PanelSectionRow>
     </PanelSection>
   );

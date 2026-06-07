@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { FetchSpecies, Mon, PartyMon, SpeciesExtra } from "./types";
 import { Pokedex } from "./Pokedex";
+import { Pressable } from "./Pressable";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -96,23 +97,21 @@ export function MonDetail({
 
   return (
     <div>
-      <button
-        onClick={onBack}
+      <Pressable
+        onPress={onBack}
         style={{
-          appearance: "none",
+          display: "inline-block",
           background: "#ffffff10",
           border: "1px solid #ffffff1a",
-          color: "inherit",
           borderRadius: 9,
           padding: "5px 12px",
           fontSize: "0.82em",
           fontWeight: 700,
-          cursor: "pointer",
           marginBottom: 12,
         }}
       >
         ‹ Back
-      </button>
+      </Pressable>
 
       <div
         style={{

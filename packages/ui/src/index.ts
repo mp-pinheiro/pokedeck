@@ -6,5 +6,7 @@ export { BattleView } from "./BattleView";
 export { PartyView } from "./PartyView";
 export { MonDetail } from "./MonDetail";
 export { BattleScreen } from "./BattleScreen";
+export { InteractiveProvider } from "./Pressable";
+export type { PressableRenderer } from "./Pressable";
 export { GamePicker } from "./GamePicker";
 export { useBattleState } from "./useBattleState";

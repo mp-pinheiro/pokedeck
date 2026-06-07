@@ -1,5 +1,5 @@
 import type { PartyMon } from "./types";
-import { openProps } from "./interactive";
+import { Pressable } from "./Pressable";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -11,8 +11,8 @@ function PartyRow({ m, onOpen }: { m: PartyMon; onOpen?: () => void }) {
   const accent = typeColor(m.types[0]);
   const fainted = m.hp <= 0;
   return (
-    <div
-      {...openProps(onOpen)}
+    <Pressable
+      onPress={onOpen}
       style={{
         display: "flex",
         gap: 10,
@@ -22,7 +22,6 @@ function PartyRow({ m, onOpen }: { m: PartyMon; onOpen?: () => void }) {
         border: "1px solid #ffffff10",
         borderLeft: `3px solid ${accent}`,
         opacity: fainted ? 0.5 : 1,
-        cursor: onOpen ? "pointer" : undefined,
       }}
     >
       <Sprite id={dex} size={46} alt={m.species} />
@@ -62,7 +61,7 @@ function PartyRow({ m, onOpen }: { m: PartyMon; onOpen?: () => void }) {
           </div>
         )}
       </div>
-    </div>
+    </Pressable>
   );
 }
 

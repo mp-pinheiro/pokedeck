@@ -1,5 +1,5 @@
 import type { Mon } from "./types";
-import { openProps } from "./interactive";
+import { Pressable } from "./Pressable";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -20,8 +20,8 @@ export function MonCard({ mon, label, onOpen }: { mon: Mon; label?: string; onOp
   const dex = mon.dex ?? mon.species_id;
   const gen = genInfo(dex);
   return (
-    <div
-      {...openProps(onOpen)}
+    <Pressable
+      onPress={onOpen}
       style={{
         display: "flex",
         gap: 12,
@@ -31,7 +31,6 @@ export function MonCard({ mon, label, onOpen }: { mon: Mon; label?: string; onOp
         border: "1px solid #ffffff12",
         borderLeft: `3px solid ${accent}`,
         boxShadow: `0 12px 30px -18px ${accent}, inset 0 1px 0 #ffffff0a`,
-        cursor: onOpen ? "pointer" : undefined,
       }}
     >
       <Sprite id={dex} size={76} alt={mon.species} />
@@ -91,6 +90,6 @@ export function MonCard({ mon, label, onOpen }: { mon: Mon; label?: string; onOp
         )}
         <MoveList moves={mon.moves} />
       </div>
-    </div>
+    </Pressable>
   );
 }
