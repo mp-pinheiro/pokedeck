@@ -17,6 +17,7 @@ def mon_to_dict(mon, pd):
         })
     return {
         "species_id": mon.species,
+        "dex": pd.national_dex(mon.species),
         "species": pd.species_name(mon.species) or f"#{mon.species}",
         "level": mon.level,
         "hp": mon.hp,
@@ -49,6 +50,7 @@ def party_mon_to_dict(mon, pd):
         moves.append({"id": mid, "name": mv["name"] if mv else f"#{mid}", "type": mv["type"] if mv else None})
     return {
         "species_id": mon["species"],
+        "dex": pd.national_dex(mon["species"]),
         "species": pd.species_name(mon["species"]) or f"#{mon['species']}",
         "level": mon["level"],
         "hp": mon["hp"],
