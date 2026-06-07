@@ -38,3 +38,26 @@ def mon_to_dict(mon, pd):
 
 def battle_payload(mons, pd):
     return {side: mon_to_dict(mon, pd) for side, mon in mons.items()}
+
+
+def party_mon_to_dict(mon, pd):
+    moves = []
+    for mid in mon["moves"]:
+        if not mid:
+            continue
+        mv = pd.move(mid)
+        moves.append({"id": mid, "name": mv["name"] if mv else f"#{mid}", "type": mv["type"] if mv else None})
+    return {
+        "species_id": mon["species"],
+        "species": pd.species_name(mon["species"]) or f"#{mon['species']}",
+        "level": mon["level"],
+        "hp": mon["hp"],
+        "max_hp": mon["max_hp"],
+        "shiny": mon["shiny"],
+        "item": pd.item_name(mon["item"]) or (f"#{mon['item']}" if mon["item"] else None),
+        "moves": moves,
+    }
+
+
+def party_payload(party, pd):
+    return [party_mon_to_dict(m, pd) for m in party]

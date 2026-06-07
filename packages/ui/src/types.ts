@@ -28,11 +28,24 @@ export interface Mon {
   moves: Move[];
 }
 
+export interface PartyMon {
+  species_id: number;
+  species: string;
+  level: number;
+  hp: number;
+  max_hp: number;
+  shiny: boolean;
+  item: string | null;
+  moves: { id: number; name: string; type: string | null }[];
+}
+
 export interface BattleState {
   connected: boolean;
   in_battle: boolean;
   player?: Mon;
   opponent?: Mon;
+  party?: PartyMon[];
+  opponent_party?: PartyMon[];
 }
 
 export interface Game {

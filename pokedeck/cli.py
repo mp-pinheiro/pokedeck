@@ -163,6 +163,22 @@ def cmd_battle(client, desc, args):
         print_mon(mon)
 
 
+def cmd_party(client, desc, args):
+    from .party import read_party
+    pd = _pd()
+    for label, sym in (("player", "gPlayerParty"), ("opponent", "gEnemyParty")):
+        if sym not in desc.symbols:
+            continue
+        print(f"=== {label} party ===")
+        for i, mon in enumerate(read_party(client, desc.symbol(sym)), 1):
+            name = pd.species_name(mon["species"]) or f"#{mon['species']}"
+            shiny = " *shiny*" if mon["shiny"] else ""
+            moves = ", ".join(pd.move(m)["name"] if pd.move(m) else f"#{m}" for m in mon["moves"] if m)
+            item = pd.item_name(mon["item"]) if mon["item"] else None
+            held = f" @{item or '#' + str(mon['item'])}" if mon["item"] else ""
+            print(f"  {i}. {name}{shiny} Lv{mon['level']} {mon['hp']}/{mon['max_hp']}{held} — {moves}")
+
+
 def cmd_findmon(client, desc, args):
     start, end = int(args.start, 16), int(args.end, 16)
     print(f"scanning 0x{start:08x}-0x{end:08x} for HP={args.hp} Lv={args.level} maxHP={args.maxhp} ...")
@@ -229,6 +245,7 @@ COMMANDS = {
     "dumpbin": cmd_dumpbin,
     "decode": cmd_decode,
     "battle": cmd_battle,
+    "party": cmd_party,
     "live": cmd_live,
     "findmon": cmd_findmon,
     "automap": cmd_automap,
@@ -252,6 +269,7 @@ def main(argv=None):
     sub.add_parser("status")
     sub.add_parser("live")
     sub.add_parser("battle")
+    sub.add_parser("party")
     fm = sub.add_parser("findmon")
     fm.add_argument("--hp", type=int, required=True)
     fm.add_argument("--level", type=int, required=True)

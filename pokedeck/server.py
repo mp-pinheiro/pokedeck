@@ -17,7 +17,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .battle import read_battle
 from .descriptor import list_games, resolve_game
-from .payload import battle_payload
+from .party import read_party
+from .payload import battle_payload, party_payload
 from .pokedata import PokeData
 from .retroarch import RetroArchClient, RetroArchError
 
@@ -89,14 +90,26 @@ class Session:
 
 
 def read_payload(session):
+    descriptor = session.descriptor
     try:
-        in_battle, mons = read_battle(session.client, session.descriptor)
+        in_battle, mons = read_battle(session.client, descriptor)
     except (RetroArchError, OSError):
         return dict(DISCONNECTED)
     payload = {"connected": True, "in_battle": in_battle}
     if in_battle:
         payload.update(battle_payload(mons, session.pd))
+    if "gPlayerParty" in descriptor.symbols:
+        payload["party"] = _read_party(session.client, descriptor, "gPlayerParty", session.pd)
+    if in_battle and "gEnemyParty" in descriptor.symbols:
+        payload["opponent_party"] = _read_party(session.client, descriptor, "gEnemyParty", session.pd)
     return payload
+
+
+def _read_party(client, descriptor, symbol, pd):
+    try:
+        return party_payload(read_party(client, descriptor.symbol(symbol)), pd)
+    except (RetroArchError, OSError):
+        return []
 
 
 def poll_loop(hub, session, interval):

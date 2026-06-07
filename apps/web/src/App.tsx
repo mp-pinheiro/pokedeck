@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BattleView, GamePicker, useBattleState } from "@poke-deck/ui";
+import { BattleView, GamePicker, PartyView, useBattleState } from "@poke-deck/ui";
 import type { Game } from "@poke-deck/ui";
 import { sseTransport } from "./sseTransport";
 
@@ -54,6 +54,8 @@ export function App() {
         <GamePicker games={info.games} current={info.game} onSelect={selectGame} />
       </header>
       <BattleView state={state} />
+      <PartyView party={state?.opponent_party} label="Opponent team" />
+      <PartyView party={state?.party} label="Your team" />
     </div>
   );
 }

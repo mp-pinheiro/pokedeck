@@ -14,12 +14,14 @@
     "_note": "Cartridge header is byte-identical to vanilla Emerald (BPEE01). Distinguish by sha1 or the 32MB expanded size; header-based runtime detection cannot tell Lazarus from vanilla Emerald."
   },
   "symbols": {
-    "_note": "Mapped live 2026-06-07 (Brionne vs Cascoon) + deep RE workflow. gBattleStruct is the in-battle gate: heap pointer in battle, NULL out of battle (BOTH confirmed live). gBattleTypeFlags (corrected to 0x020002C0; vanilla 0x02022FEC reads 0 mid-battle) stays STALE (0xC) out of battle, so do NOT gate on it. gBattleMons[0].species clears to 0 out of battle. The gBattleMons copy at 0x020383BC is passive. Parties relocate via IWRAM indirection; unused by v1.",
+    "_note": "Mapped live 2026-06-07 (Brionne vs Cascoon) + deep RE workflow. gBattleStruct is the in-battle gate: heap pointer in battle, NULL out of battle (BOTH confirmed live). gBattleTypeFlags (corrected to 0x020002C0; vanilla 0x02022FEC reads 0 mid-battle) stays STALE (0xC) out of battle, so do NOT gate on it. gBattleMons[0].species clears to 0 out of battle. The gBattleMons copy at 0x020383BC is passive. gPlayerParty/gEnemyParty verified live 2026-06-07 (Brionne party; Cascoon+Cutiefly enemy) — encrypted 100-byte Gen-3 slots, see pokedeck/party.py.",
     "verified": true,
     "gBattleMons": "0x02000360",
     "gBattleStruct": "0x0200082C",
     "gBattleTypeFlags": "0x020002C0",
-    "gBattlersCount": "0x02000344"
+    "gBattlersCount": "0x02000344",
+    "gPlayerParty": "0x0201B960",
+    "gEnemyParty": "0x0201BBB8"
   },
   "battle": {
     "_note": "pokeemerald-expansion 1.16.1 (v1161) BattlePokemon, 96 bytes (0x60), natural alignment. Every field verified live 2026-06-07 against bmons_a.bin + the v1161 header. 0x5E-0x5F are trailing padding.",
