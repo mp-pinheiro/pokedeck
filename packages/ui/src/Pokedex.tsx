@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { SpeciesExtra } from "./types";
+import { FocusItem } from "./Pressable";
 import { HUD_LABEL } from "./theme";
 
 function pretty(name: string): string {
@@ -39,7 +40,7 @@ export function Pokedex({
   if (!extra) return null; // offline / unavailable — show ROM data only
   const cur = species.toLowerCase();
   return (
-    <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #ffffff12" }}>
+    <FocusItem style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #ffffff12" }}>
       <div style={{ ...HUD_LABEL, marginBottom: 8 }}>Pokédex</div>
       <div style={{ display: "flex", gap: 12 }}>
         {extra.sprites.artwork && (
@@ -88,6 +89,6 @@ export function Pokedex({
         {extra.egg_groups.length > 0 && <Meta label="Eggs" value={extra.egg_groups.map(pretty).join(", ")} />}
         {extra.capture_rate != null && <Meta label="Catch" value={String(extra.capture_rate)} />}
       </div>
-    </div>
+    </FocusItem>
   );
 }

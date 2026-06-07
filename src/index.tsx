@@ -3,15 +3,20 @@ import { addEventListener, removeEventListener, call, definePlugin } from "@deck
 import { useMemo } from "react";
 import { FaBolt } from "react-icons/fa";
 import { BattleScreen, InteractiveProvider, useBattleState } from "@poke-deck/ui";
-import type { BattleListener, BattleState, BattleTransport, PressableRenderer, SpeciesExtra } from "@poke-deck/ui";
+import type { BattleListener, BattleState, BattleTransport, InteractiveImpl, SpeciesExtra } from "@poke-deck/ui";
 
-// Make shared cards/rows/Back reachable by the Steam gamepad: render them as
-// @decky/ui <Focusable> (onActivate = the A button) instead of plain divs.
-const deckyPressable: PressableRenderer = ({ onPress, children, style }) => (
-  <Focusable onActivate={() => onPress()} onClick={() => onPress()} style={style}>
-    {children}
-  </Focusable>
-);
+// Make shared cards/rows/sections reachable by the Steam gamepad via @decky/ui
+// <Focusable>: A activates (onActivate), the d-pad lands on focus stops so the
+// panel scrolls, and B (onCancel) goes Back from the detail view.
+const interactive: InteractiveImpl = {
+  pressable: ({ onPress, children, style }) => (
+    <Focusable onActivate={() => onPress()} onClick={() => onPress()} style={style}>
+      {children}
+    </Focusable>
+  ),
+  focusItem: ({ children, style }) => <Focusable style={style}>{children}</Focusable>,
+  cancelZone: ({ onCancel, children }) => <Focusable onCancel={() => onCancel()}>{children}</Focusable>,
+};
 
 // PokeAPI lookup via the backend (disk-cached). Backend returns {} when offline.
 const fetchSpecies = (dex: number): Promise<SpeciesExtra | null> =>
@@ -37,7 +42,7 @@ function Content() {
   return (
     <PanelSection title="Poke Deck">
       <PanelSectionRow>
-        <InteractiveProvider value={deckyPressable}>
+        <InteractiveProvider value={interactive}>
           <BattleScreen state={state} fetchSpecies={fetchSpecies} />
         </InteractiveProvider>
       </PanelSectionRow>

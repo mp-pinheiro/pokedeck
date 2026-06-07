@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { FetchSpecies, Mon, PartyMon, SpeciesExtra } from "./types";
 import { Pokedex } from "./Pokedex";
-import { Pressable } from "./Pressable";
+import { Pressable, FocusItem } from "./Pressable";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
@@ -10,12 +10,13 @@ import { MoveList } from "./MoveList";
 import { StatBars } from "./StatBars";
 import { typeColor, statusInfo, genInfo, HUD_LABEL } from "./theme";
 
+// Each section is a gamepad focus stop so the d-pad can scroll the whole page on the Deck.
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ marginTop: 14 }}>
+    <FocusItem style={{ marginTop: 14 }}>
       <div style={{ ...HUD_LABEL, marginBottom: 7 }}>{title}</div>
       {children}
-    </div>
+    </FocusItem>
   );
 }
 
@@ -113,6 +114,7 @@ export function MonDetail({
         ‹ Back
       </Pressable>
 
+      <FocusItem>
       <div
         style={{
           display: "flex",
@@ -183,6 +185,7 @@ export function MonDetail({
           {mon.item_desc && <span style={{ opacity: 0.7 }}> — {mon.item_desc}</span>}
         </div>
       )}
+      </FocusItem>
 
       {mon.base && (
         <Section title={active ? "Base stats" : "Base stats"}>
@@ -201,7 +204,7 @@ export function MonDetail({
 
       {mon.moves.length > 0 && (
         <Section title="Moves">
-          <MoveList moves={mon.moves} tooltips />
+          <MoveList moves={mon.moves} detailed />
         </Section>
       )}
 

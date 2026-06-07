@@ -3,6 +3,7 @@ import type { BattleState, FetchSpecies, Mon, PartyMon } from "./types";
 import { BattleView } from "./BattleView";
 import { PartyView } from "./PartyView";
 import { MonDetail } from "./MonDetail";
+import { CancelZone } from "./Pressable";
 
 type Sel =
   | { group: "active"; side: "player" | "opponent" }
@@ -39,13 +40,15 @@ export function BattleScreen({
 
   if (picked) {
     return (
-      <MonDetail
-        mon={picked.mon}
-        active={picked.active}
-        subtitle={picked.subtitle}
-        onBack={() => setSel(null)}
-        fetchSpecies={fetchSpecies}
-      />
+      <CancelZone onCancel={() => setSel(null)}>
+        <MonDetail
+          mon={picked.mon}
+          active={picked.active}
+          subtitle={picked.subtitle}
+          onBack={() => setSel(null)}
+          fetchSpecies={fetchSpecies}
+        />
+      </CancelZone>
     );
   }
 
