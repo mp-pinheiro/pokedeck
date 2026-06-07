@@ -145,6 +145,20 @@ def parse_block_names(path, prefix):
     return out
 
 
+# .description = COMPOUND_STRING("a\n" "b.") -> the adjacent string literals.
+_DESC_RX = re.compile(r'\.description\s*=\s*COMPOUND_STRING\(\s*((?:"(?:[^"\\]|\\.)*"\s*)+)\)')
+_STR_RX = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def _move_desc(block):
+    m = _DESC_RX.search(block)
+    if not m:
+        return None
+    text = "".join(_STR_RX.findall(m.group(1)))
+    text = text.replace("\\n", " ").replace('\\"', '"').replace("\\\\", "\\")
+    return " ".join(text.split()) or None
+
+
 def parse_moves_info(path):
     header_rx = re.compile(r"\[(MOVE_[A-Z0-9_]+)\]\s*=")
     type_rx = re.compile(r"\.type\s*=\s*TYPE_([A-Z_]+)")
@@ -169,6 +183,7 @@ def parse_moves_info(path):
             "accuracy": nums["accuracy"],
             "pp": nums["pp"],
             "priority": nums["priority"],
+            "desc": _move_desc(block),
         }
     return out
 

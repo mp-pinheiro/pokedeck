@@ -10,6 +10,7 @@ export interface Move {
   priority: number | null;
   pp_max: number | null;
   pp: number | null; // live remaining PP; null when read off-RAM (bench mons)
+  desc: string | null; // effect text
 }
 
 export interface Mon {

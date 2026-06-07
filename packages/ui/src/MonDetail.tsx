@@ -199,7 +199,7 @@ export function MonDetail({
 
       {mon.moves.length > 0 && (
         <Section title="Moves">
-          <MoveList moves={mon.moves} />
+          <MoveList moves={mon.moves} tooltips />
         </Section>
       )}
 

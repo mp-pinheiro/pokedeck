@@ -25,6 +25,7 @@ def move_dict(pd, mid, cur_pp=None):
         "priority": mv.get("priority") if mv else None,
         "pp_max": mv.get("pp") if mv else None,
         "pp": cur_pp,
+        "desc": mv.get("desc") if mv else None,
     }
 
 
