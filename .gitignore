@@ -30,3 +30,7 @@ dist/
 out/
 py_modules/
 defaults/
+build/
+
+# Local Deck deploy config (secrets)
+.env

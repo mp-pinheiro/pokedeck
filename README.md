@@ -59,6 +59,29 @@ Expansion builds relocate every EWRAM symbol, so `gBattleMons` must be found liv
 ROMs are never committed (`*.gba` is gitignored). Name tables are generated from
 pokeemerald-expansion (pinned to 1.16.1) via `tools/gen_data.py`.
 
+## Deploying to the Steam Deck
+
+The Deck is the primary target; the fastest loop is over SSH — no manual side-load.
+Enable SSH in SteamOS, copy `.env.example` to `.env`, set `DECK_HOST` / `DECK_PASSWORD`,
+then:
+
+    make deploy     # build (frontend + SPA + bundle), SCP, sudo-install on the Deck
+    make logs       # tail Decky loader logs
+    make verify     # confirm the deployed files exist
+    make cef        # print the CEF DevTools URL
+    make undeploy   # remove the plugin
+
+`make deploy` stages the plugin payload (`tools/stage.py`) into the exact on-Deck
+layout (`main.py`, `dist/`, `py_modules/pokedeck/`, `data/`, `web/`) and installs it
+to `~/homebrew/plugins/poke-deck`. With `DEBUG=1` (default) it injects the plugin.json
+`debug` flag so **Decky auto-reloads** on each deploy — the repo `plugin.json` stays
+clean (the flag is added only to the deployed copy; use `DEBUG=0` for a store-like build).
+
+**Frontend debugging:** turn on *Allow Remote CEF Debugging* in Decky → Developer, then
+open `http://steamdeck:8081` in a Chromium browser (or Playwright MCP). The `QuickAccess`
+tab is the panel UI; `SharedJSContext` is the JS console. Needs `sshpass` locally for the
+sudo-over-SSH steps; `make help` lists every target.
+
 ## Browser app
 
 A standalone React web app (`apps/web`) shows the same live battle info in any
