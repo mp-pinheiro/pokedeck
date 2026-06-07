@@ -134,21 +134,34 @@ def _u16(data, off):
 
 
 def plausible_battler(data, base, hp_off):
-    """Heuristic: does `base` look like a live BattlePokemon for this alignment?"""
+    """Heuristic: does `base` look like a live BattlePokemon for this alignment?
+    Anchored on the version-stable front half (species/moves/types) plus the
+    hp/level/maxHP trio, so it rejects almost all misaligned offsets."""
     if base < 0 or base + hp_off + 6 > len(data):
         return False
-    if not 1 <= _u16(data, base) <= 1600:  # species
+    if not 1 <= _u16(data, base) <= 1700:  # species (NUM_SPECIES ~1697)
         return False
     if not 1 <= data[base + hp_off + 2] <= 100:  # level
         return False
     hp, maxhp = _u16(data, base + hp_off), _u16(data, base + hp_off + 4)
-    if not 0 < hp <= maxhp <= 2000:
+    if not 0 < hp <= maxhp <= 9999:
         return False
-    return all(_u16(data, base + 2 + i * 2) <= 1500 for i in range(5))  # 5 stats
+    if any(_u16(data, base + 2 + i * 2) > 9999 for i in range(5)):  # 5 stats
+        return False
+    if any(data[base + 0x22 + t] >= 21 for t in range(3)):  # types < NUMBER_OF_MON_TYPES
+        return False
+    return 0 < _u16(data, base + 0x0C) <= 1100  # move[0] present (MOVES_COUNT)
 
 
 def _find_stride(data, base, hp_off, opp_level, stride_range):
-    for stride in range(stride_range[0], stride_range[1] + 1):
+    # Known expansion sizeof(BattlePokemon): 104 (1.13/1.14), 136 (1.15), 140 (1.16).
+    # Strides are even; test the common sizes first, then sweep the window.
+    candidates = [104, 136, 140] + list(range(stride_range[0], stride_range[1] + 1, 2))
+    seen = set()
+    for stride in candidates:
+        if stride in seen:
+            continue
+        seen.add(stride)
         b2 = base + stride
         if plausible_battler(data, b2, hp_off):
             if opp_level is None or data[b2 + hp_off + 2] == opp_level:
@@ -156,7 +169,7 @@ def _find_stride(data, base, hp_off, opp_level, stride_range):
     return None
 
 
-def automap_scan(data, hp, level, maxhp, opp_level=None, stride_range=(0x58, 0xE0)):
+def automap_scan(data, hp, level, maxhp, opp_level=None, stride_range=(96, 160)):
     """Locate gBattleMons[0] by the hp/level/maxHP signature, determine alignment,
     and find the battler stride. Returns a list of {base_index, hp_off, stride}."""
     out = []
