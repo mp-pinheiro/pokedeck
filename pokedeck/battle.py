@@ -188,3 +188,24 @@ def automap_scan(data, hp, level, maxhp, opp_level=None, stride_range=(96, 160))
                     break
         i = data.find(hp_bytes, i + 1)
     return out
+
+
+def _hp_offset(descriptor):
+    return descriptor.battle.fields["hp"].offset
+
+
+def read_battle(client, descriptor):
+    """Read active battlers with a robust in-battle gate: validate battler 0
+    (independent of the relocated/stale gBattleTypeFlags). Returns
+    (in_battle, {side: BattleMon})."""
+    base = descriptor.symbol("gBattleMons")
+    stride = descriptor.battle.stride
+    block = client.read_memory(base, stride * descriptor.battle.battler_count)
+    hp_off = _hp_offset(descriptor)
+    if not plausible_battler(block, descriptor.battle.player_battler * stride, hp_off):
+        return False, {}
+    mons = {}
+    for side, idx in (("player", descriptor.battle.player_battler),
+                      ("opponent", descriptor.battle.opponent_battler)):
+        mons[side] = parse_battler(block[idx * stride:(idx + 1) * stride], descriptor, idx, side)
+    return True, mons

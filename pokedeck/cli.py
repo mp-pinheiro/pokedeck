@@ -14,8 +14,8 @@ from .battle import (
     automap_scan,
     build_field_map,
     find_battle_mon,
-    in_battle,
     parse_battler,
+    read_battle,
     read_battlers,
 )
 from .descriptor import resolve_descriptor
@@ -106,24 +106,23 @@ def cmd_decode(client, desc, args):
 
 
 def cmd_live(client, desc, args):
-    print(f"polling {desc.name} on {client.host}:{client.port} (Ctrl-C to stop)")
+    print(f"polling {desc.name} via {args.transport} (Ctrl-C to stop)")
     last_sig = None
-    last_in_battle = None
+    last_state = None
     while True:
         try:
-            active, flags = in_battle(client, desc)
+            active, mons = read_battle(client, desc)
             if not active:
-                if last_in_battle is not False:
+                if last_state is not False:
                     print("… not in battle")
-                last_in_battle = False
+                last_state = False
                 last_sig = None
                 time.sleep(0.25)
                 continue
-            last_in_battle = True
-            mons = read_battlers(client, desc)
+            last_state = True
             sig = tuple((m.species, m.hp, m.level) for m in mons.values())
             if sig != last_sig:
-                print(f"\n=== battle (flags=0x{flags:08x}) ===")
+                print("\n=== battle ===")
                 for mon in mons.values():
                     print_mon(mon)
                 last_sig = sig
