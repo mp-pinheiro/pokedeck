@@ -10,12 +10,17 @@ interface Mon {
   hp: number;
   max_hp: number;
   status: number;
+  shiny: boolean;
+  ability: string | null;
+  item: string | null;
+  friendship: number;
+  ivs: Record<string, number> | null;
   stats: Record<string, number>;
   types: string[];
   weak: [string, number][];
   resist: [string, number][];
   immune: string[];
-  moves: { id: number; name: string; type: string | null; category: string | null }[];
+  moves: { id: number; name: string; type: string | null; category: string | null; pp: number | null }[];
 }
 
 interface BattleState {
@@ -32,18 +37,26 @@ function MonView({ mon }: { mon: Mon }) {
   return (
     <div style={{ fontSize: "0.85em", lineHeight: 1.45 }}>
       <div style={{ fontWeight: "bold" }}>
-        {mon.species} · Lv{mon.level}
+        {mon.shiny ? "★ " : ""}{mon.species} · Lv{mon.level}
       </div>
       <div>
         HP {mon.hp}/{mon.max_hp} ({pct}%) · {mon.types.join(" / ")}
       </div>
+      {mon.ability && (
+        <div>
+          Ability: {mon.ability}
+          {mon.item ? ` · Item: ${mon.item}` : ""}
+        </div>
+      )}
       {mon.weak.length > 0 && (
         <div style={{ color: "#ff6b6b" }}>
           Weak: {mon.weak.map(([t, m]) => `${t} ${mult(m)}`).join(", ")}
         </div>
       )}
       {mon.immune.length > 0 && <div>Immune: {mon.immune.join(", ")}</div>}
-      <div>Moves: {mon.moves.map((mv) => mv.name).join(", ") || "—"}</div>
+      <div>
+        Moves: {mon.moves.map((mv) => (mv.pp != null ? `${mv.name} (${mv.pp})` : mv.name)).join(", ") || "—"}
+      </div>
     </div>
   );
 }

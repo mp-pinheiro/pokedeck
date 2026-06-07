@@ -4,7 +4,7 @@
 def mon_to_dict(mon, pd):
     weak = mon.weaknesses()
     moves = []
-    for mid in mon.moves:
+    for i, mid in enumerate(mon.moves):
         if not mid:
             continue
         mv = pd.move(mid)
@@ -13,6 +13,7 @@ def mon_to_dict(mon, pd):
             "name": mv["name"] if mv else f"#{mid}",
             "type": mv["type"] if mv else None,
             "category": mv["category"] if mv else None,
+            "pp": mon.pp[i] if i < len(mon.pp) else None,
         })
     return {
         "species_id": mon.species,
@@ -21,6 +22,11 @@ def mon_to_dict(mon, pd):
         "hp": mon.hp,
         "max_hp": mon.max_hp,
         "status": mon.status1,
+        "shiny": mon.is_shiny,
+        "ability": pd.ability_name(mon.ability) or (f"#{mon.ability}" if mon.ability else None),
+        "item": pd.item_name(mon.item) or (f"#{mon.item}" if mon.item else None),
+        "friendship": mon.friendship,
+        "ivs": mon.iv_spread if mon.ivs else None,
         "stats": mon.stats,
         "types": mon.types,
         "weak": [[t, m] for t, m in weak["weak"]],
