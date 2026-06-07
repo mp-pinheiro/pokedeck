@@ -1,0 +1,11 @@
+{
+  "name": "Poke Deck",
+  "author": "Matheus Pinheiro",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["pokemon", "retroarch", "emulation"],
+    "description": "Live Pokémon battle info (species, stats, types, weaknesses, moves) read from RetroArch.",
+    "image": ""
+  }
+}

@@ -20,3 +20,8 @@ data/*.gba
 # Python
 __pycache__/
 *.pyc
+
+# Node / Decky build
+node_modules/
+dist/
+out/
