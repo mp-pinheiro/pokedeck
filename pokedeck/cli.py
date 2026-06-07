@@ -95,6 +95,14 @@ def cmd_dump(client, desc, args):
         print(f"0x{addr + i:08x}  {hexs}")
 
 
+def cmd_dumpbin(client, desc, args):
+    addr = int(args.address, 16)
+    data = client.read_memory(addr, args.length)
+    with open(args.outfile, "wb") as fh:
+        fh.write(data)
+    print(f"wrote {len(data)} bytes from 0x{addr:08x} to {args.outfile}")
+
+
 def cmd_decode(client, desc, args):
     raw = "".join(args.hex).replace("0x", "").replace(" ", "").replace("\n", "")
     buf = bytes.fromhex(raw)
@@ -204,6 +212,7 @@ COMMANDS = {
     "info": cmd_info,
     "status": cmd_status,
     "dump": cmd_dump,
+    "dumpbin": cmd_dumpbin,
     "decode": cmd_decode,
     "battle": cmd_battle,
     "live": cmd_live,
@@ -247,6 +256,10 @@ def main(argv=None):
     d = sub.add_parser("dump")
     d.add_argument("address", help="hex address, e.g. 02024084")
     d.add_argument("length", type=int)
+    db = sub.add_parser("dumpbin")
+    db.add_argument("address", help="hex address")
+    db.add_argument("length", type=int)
+    db.add_argument("outfile")
     dec = sub.add_parser("decode")
     dec.add_argument("hex", nargs="+")
     args = p.parse_args(argv)
