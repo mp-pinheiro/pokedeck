@@ -38,3 +38,15 @@ export function statusInfo(status: number): { label: string; color: string } | n
 export function spriteUrl(id: number): string {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
 }
+
+// Generation from National-Dex number (last dex id of each gen).
+const _GEN_LAST = [151, 251, 386, 493, 649, 721, 809, 905, 1025];
+const _ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+
+export function genInfo(dex: number | null | undefined): { num: number; label: string } | null {
+  if (!dex || dex < 1) return null;
+  for (let i = 0; i < _GEN_LAST.length; i++) {
+    if (dex <= _GEN_LAST[i]) return { num: i + 1, label: `GEN ${_ROMAN[i]}` };
+  }
+  return null;
+}

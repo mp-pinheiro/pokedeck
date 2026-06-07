@@ -10,6 +10,7 @@ export interface Move {
 
 export interface Mon {
   species_id: number;
+  dex?: number | null; // National-Dex number (sprite + generation); differs from species_id for Gen-9/forms
   species: string;
   level: number;
   hp: number;
@@ -30,6 +31,7 @@ export interface Mon {
 
 export interface PartyMon {
   species_id: number;
+  dex?: number | null;
   species: string;
   level: number;
   hp: number;

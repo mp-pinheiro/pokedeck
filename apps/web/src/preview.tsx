@@ -45,11 +45,18 @@ createRoot(document.getElementById("root")!).render(
         pm({ species_id: 248, species: "Tyranitar", level: 45, hp: 96, max_hp: 160 }),
         pm({ species_id: 282, species: "Gardevoir", level: 43, hp: 130, max_hp: 130 }),
         pm({ species_id: 460, species: "Abomasnow", level: 44, hp: 0, max_hp: 170 }),
+        // Gen-9 mon: internal id 1336 but Pokédex #948 -> sprite/gen come from dex
+        pm({ species_id: 1336, dex: 948, species: "Toedscool", level: 41, hp: 70, max_hp: 95 }),
+        // Paldean form: dex 128 -> base Tauros sprite, Gen I
+        pm({ species_id: 1402, dex: 128, species: "Tauros", level: 42, hp: 88, max_hp: 130 }),
       ]}
       label="Opponent team"
     />
     <PartyView
-      party={[pm({ species_id: 729, species: "Brionne", level: 22, hp: 21, max_hp: 61, shiny: true })]}
+      party={[
+        pm({ species_id: 729, species: "Brionne", level: 22, hp: 21, max_hp: 61, shiny: true }),
+        pm({ species_id: 1291, dex: 908, species: "Meowscarada", level: 24, hp: 60, max_hp: 78 }),
+      ]}
       label="Your team"
     />
   </div>,

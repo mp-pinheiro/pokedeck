@@ -2,7 +2,7 @@ import type { Mon } from "./types";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
 import { HpBar } from "./HpBar";
-import { typeColor, statusInfo } from "./theme";
+import { typeColor, statusInfo, genInfo } from "./theme";
 
 const HUD_LABEL = {
   fontSize: "0.62em",
@@ -15,6 +15,8 @@ const HUD_LABEL = {
 export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
   const accent = typeColor(mon.types[0]);
   const status = statusInfo(mon.status);
+  const dex = mon.dex ?? mon.species_id;
+  const gen = genInfo(dex);
   return (
     <div
       style={{
@@ -28,7 +30,7 @@ export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
         boxShadow: `0 12px 30px -18px ${accent}, inset 0 1px 0 #ffffff0a`,
       }}
     >
-      <Sprite id={mon.species_id} size={76} alt={mon.species} />
+      <Sprite id={dex} size={76} alt={mon.species} />
       <div style={{ flex: 1, minWidth: 0 }}>
         {label && <div style={HUD_LABEL}>{label}</div>}
         <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
@@ -37,6 +39,11 @@ export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
             {mon.species}
           </span>
           <span style={{ opacity: 0.55, fontSize: "0.82em" }}>Lv{mon.level}</span>
+          {gen && (
+            <Pill bg="#ffffff12" color="#9fb1c6" title={`#${dex} · National Dex`}>
+              {gen.label}
+            </Pill>
+          )}
           {status && (
             <Pill bg={status.color} color="#15171c">
               {status.label}
