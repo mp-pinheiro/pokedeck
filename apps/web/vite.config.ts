@@ -2,14 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // Dev: Vite serves the SPA and proxies SSE/api to the Python server (default :8420).
-// Prod: the Python server serves the built SPA + SSE from one origin (no proxy, no mixed-content).
+// Prod: the Python server serves the built SPA + SSE from one origin (no mixed-content).
 export default defineConfig({
   plugins: [react()],
+  base: "./",
   server: {
     proxy: {
       "/events": { target: "http://127.0.0.1:8420", changeOrigin: true },
       "/api": { target: "http://127.0.0.1:8420", changeOrigin: true },
     },
   },
-  build: { outDir: "dist", emptyOutDir: true },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    // Second entry: /preview.html renders the components with mock data (no server).
+    rollupOptions: { input: { main: "index.html", preview: "preview.html" } },
+  },
 });

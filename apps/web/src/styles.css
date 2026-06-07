@@ -1,0 +1,37 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Pixelify+Sans:wght@500;700&display=swap");
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "Outfit", system-ui, sans-serif;
+  color: #e8eef4;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #1b2a44 0%, transparent 60%),
+    radial-gradient(900px 520px at -10% 110%, #2a1c3a 0%, transparent 55%),
+    #0c0e13;
+  background-attachment: fixed;
+}
+
+/* faint CRT scanline overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: repeating-linear-gradient(0deg, #ffffff05 0 1px, transparent 1px 3px);
+  opacity: 0.35;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}

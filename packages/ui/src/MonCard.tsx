@@ -1,30 +1,94 @@
 import type { Mon } from "./types";
+import { Pill } from "./Pill";
+import { Sprite } from "./Sprite";
+import { HpBar } from "./HpBar";
+import { typeColor, statusInfo } from "./theme";
 
-const mult = (m: number) => (m === 0 ? "immune" : `x${m}`);
+const HUD_LABEL = {
+  fontSize: "0.62em",
+  fontWeight: 700,
+  letterSpacing: 1.5,
+  textTransform: "uppercase",
+  opacity: 0.45,
+} as const;
 
 export function MonCard({ mon, label }: { mon: Mon; label?: string }) {
-  const pct = mon.max_hp ? Math.round((mon.hp / mon.max_hp) * 100) : 0;
+  const accent = typeColor(mon.types[0]);
+  const status = statusInfo(mon.status);
   return (
-    <div style={{ fontSize: "0.9em", lineHeight: 1.45 }}>
-      {label && <div style={{ opacity: 0.6, fontSize: "0.8em", textTransform: "uppercase" }}>{label}</div>}
-      <div style={{ fontWeight: "bold" }}>
-        {mon.shiny ? "★ " : ""}
-        {mon.species} · Lv{mon.level}
-      </div>
-      <div>
-        HP {mon.hp}/{mon.max_hp} ({pct}%) · {mon.types.join(" / ")}
-      </div>
-      {mon.ability && (
-        <div>
-          Ability: {mon.ability}
-          {mon.item ? ` · Item: ${mon.item}` : ""}
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: 12,
+        borderRadius: 16,
+        background: `linear-gradient(180deg, ${accent}16, #ffffff05)`,
+        border: "1px solid #ffffff12",
+        borderLeft: `3px solid ${accent}`,
+        boxShadow: `0 12px 30px -18px ${accent}, inset 0 1px 0 #ffffff0a`,
+      }}
+    >
+      <Sprite id={mon.species_id} size={76} alt={mon.species} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {label && <div style={HUD_LABEL}>{label}</div>}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 800, fontSize: "1.08em" }}>
+            {mon.shiny ? "✦ " : ""}
+            {mon.species}
+          </span>
+          <span style={{ opacity: 0.55, fontSize: "0.82em" }}>Lv{mon.level}</span>
+          {status && (
+            <Pill bg={status.color} color="#15171c">
+              {status.label}
+            </Pill>
+          )}
         </div>
-      )}
-      {mon.weak.length > 0 && (
-        <div style={{ color: "#ff6b6b" }}>Weak: {mon.weak.map(([t, m]) => `${t} ${mult(m)}`).join(", ")}</div>
-      )}
-      {mon.immune.length > 0 && <div>Immune: {mon.immune.join(", ")}</div>}
-      <div>Moves: {mon.moves.map((mv) => (mv.pp != null ? `${mv.name} (${mv.pp})` : mv.name)).join(", ") || "—"}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "6px 0" }}>
+          {mon.types.map((t) => (
+            <Pill key={t} bg={typeColor(t)}>
+              {t}
+            </Pill>
+          ))}
+          {mon.ability && (
+            <Pill bg="#ffffff14" color="#cfe0ee">
+              {mon.ability}
+            </Pill>
+          )}
+          {mon.item && (
+            <Pill bg="#ffffff14" color="#cfe0ee">
+              ◈ {mon.item}
+            </Pill>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ flex: 1 }}>
+            <HpBar hp={mon.hp} max={mon.max_hp} />
+          </div>
+          <span style={{ fontSize: "0.78em", fontVariantNumeric: "tabular-nums", opacity: 0.85 }}>
+            {mon.hp}/{mon.max_hp}
+          </span>
+        </div>
+        {mon.weak.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 7, alignItems: "center" }}>
+            <span style={HUD_LABEL}>Weak</span>
+            {mon.weak.map(([t, m]) => (
+              <Pill key={t} bg={typeColor(t)}>
+                {t} {m >= 4 ? "×4" : "×2"}
+              </Pill>
+            ))}
+          </div>
+        )}
+        {mon.moves.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+            {mon.moves.map((mv, i) => (
+              <Pill key={i} bg={`${typeColor(mv.type)}30`} color="#e7eef6" title={mv.type ?? undefined}>
+                {mv.name}
+                {mv.pp != null ? ` · ${mv.pp}` : ""}
+              </Pill>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
