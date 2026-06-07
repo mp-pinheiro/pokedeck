@@ -14,15 +14,15 @@
     "_note": "Cartridge header is byte-identical to vanilla Emerald (BPEE01). Distinguish by sha1 or the 32MB expanded size; header-based runtime detection cannot tell Lazarus from vanilla Emerald."
   },
   "symbols": {
-    "_note": "gBattleMons verified live via automap 2026-06-07 (Brionne vs Cascoon, stride 96). A second identical copy reads at 0x020383bc. gPlayerParty/gEnemyParty/gBattleTypeFlags still vanilla and unverified (unused by v1).",
+    "_note": "Mapped live 2026-06-07 (Brionne vs Cascoon) + deep RE workflow. gBattleStruct (heap pointer, null out of battle) is the in-battle gate; gBattleTypeFlags corrected to 0x020002C0 (vanilla 0x02022FEC reads 0 even mid-battle). The gBattleMons copy at 0x020383BC is passive (no referents). Parties relocate via IWRAM indirection (vanilla addrs read zero); unused by v1.",
     "verified": true,
-    "gBattleTypeFlags": "0x02022FEC",
     "gBattleMons": "0x02000360",
-    "gPlayerParty": "0x020244EC",
-    "gEnemyParty": "0x02024744"
+    "gBattleStruct": "0x0200082C",
+    "gBattleTypeFlags": "0x020002C0",
+    "gBattlersCount": "0x02000344"
   },
   "battle": {
-    "_note": "pokeemerald-expansion BattlePokemon, natural alignment. Field offsets <=0x50 sit in the version-stable prefix. battler_stride (full struct size) is version-sensitive because the variable-size Volatiles blob follows status1, and MUST be measured live.",
+    "_note": "pokeemerald-expansion 1.16.1 (v1161) BattlePokemon, 96 bytes (0x60), natural alignment. Every field verified live 2026-06-07 against bmons_a.bin + the v1161 header. 0x5E-0x5F are trailing padding.",
     "alignment": "natural",
     "battler_stride": 96,
     "stride_verified": true,
@@ -31,20 +31,32 @@
     "opponent_battler": 1,
     "type_table": "expansion",
     "fields": {
-      "species":   {"off": "0x00", "size": 2},
-      "attack":    {"off": "0x02", "size": 2},
-      "defense":   {"off": "0x04", "size": 2},
-      "speed":     {"off": "0x06", "size": 2},
-      "spAttack":  {"off": "0x08", "size": 2},
-      "spDefense": {"off": "0x0A", "size": 2},
-      "moves":     {"off": "0x0C", "size": 2, "count": 4},
-      "type1":     {"off": "0x22", "size": 1},
-      "type2":     {"off": "0x23", "size": 1},
-      "type3":     {"off": "0x24", "size": 1},
-      "hp":        {"off": "0x2A", "size": 2},
-      "level":     {"off": "0x2C", "size": 1},
-      "maxHP":     {"off": "0x2E", "size": 2},
-      "status1":   {"off": "0x50", "size": 4}
+      "species":     {"off": "0x00", "size": 2},
+      "attack":      {"off": "0x02", "size": 2},
+      "defense":     {"off": "0x04", "size": 2},
+      "speed":       {"off": "0x06", "size": 2},
+      "spAttack":    {"off": "0x08", "size": 2},
+      "spDefense":   {"off": "0x0A", "size": 2},
+      "moves":       {"off": "0x0C", "size": 2, "count": 4},
+      "ivs":         {"off": "0x14", "size": 4},
+      "statStages":  {"off": "0x18", "size": 1, "count": 8},
+      "ability":     {"off": "0x20", "size": 2},
+      "type1":       {"off": "0x22", "size": 1},
+      "type2":       {"off": "0x23", "size": 1},
+      "type3":       {"off": "0x24", "size": 1},
+      "pp":          {"off": "0x25", "size": 1, "count": 4},
+      "hp":          {"off": "0x2A", "size": 2},
+      "level":       {"off": "0x2C", "size": 1},
+      "friendship":  {"off": "0x2D", "size": 1},
+      "maxHP":       {"off": "0x2E", "size": 2},
+      "item":        {"off": "0x30", "size": 2},
+      "ppBonuses":   {"off": "0x3F", "size": 1},
+      "experience":  {"off": "0x48", "size": 4},
+      "personality": {"off": "0x4C", "size": 4},
+      "status1":     {"off": "0x50", "size": 4},
+      "volatiles":   {"off": "0x54", "size": 4},
+      "otId":        {"off": "0x58", "size": 4},
+      "metLevel":    {"off": "0x5C", "size": 1}
     }
   }
 }

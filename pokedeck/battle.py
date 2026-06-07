@@ -23,9 +23,34 @@ class BattleMon:
     types: list
     moves: list
     status1: int = 0
+    ability: int = 0
+    item: int = 0
+    friendship: int = 0
+    ivs: int = 0
+    pp: list = field(default_factory=list)
+    personality: int = 0
+    ot_id: int = 0
+    met_level_raw: int = 0
 
     def weaknesses(self):
         return typechart.weaknesses(self.types)
+
+    @property
+    def met_level(self):
+        return self.met_level_raw & 0x7F
+
+    @property
+    def is_shiny(self):
+        o, p = self.ot_id, self.personality
+        if not o and not p:
+            return False
+        return ((o >> 16) ^ (o & 0xFFFF) ^ (p >> 16) ^ (p & 0xFFFF)) < 8
+
+    @property
+    def iv_spread(self):
+        v = self.ivs
+        return {"hp": v & 31, "atk": (v >> 5) & 31, "def": (v >> 10) & 31,
+                "spe": (v >> 15) & 31, "spa": (v >> 20) & 31, "spd": (v >> 25) & 31}
 
 
 def _read_field(buf, spec, byteorder):
@@ -69,6 +94,14 @@ def parse_battler(buf, descriptor, battler_index=0, side="?", fields=None):
         types=types,
         moves=get("moves") or [],
         status1=get("status1") or 0,
+        ability=get("ability") or 0,
+        item=get("item") or 0,
+        friendship=get("friendship") or 0,
+        ivs=get("ivs") or 0,
+        pp=get("pp") or [],
+        personality=get("personality") or 0,
+        ot_id=get("otId") or 0,
+        met_level_raw=get("metLevel") or 0,
     )
 
 
@@ -204,6 +237,11 @@ def read_battle(client, descriptor):
     hp_off = _hp_offset(descriptor)
     if not plausible_battler(block, descriptor.battle.player_battler * stride, hp_off):
         return False, {}
+    if "gBattleStruct" in descriptor.symbols:
+        # gBattleStruct is a heap pointer in battle (EWRAM range), NULL otherwise
+        ptr = int.from_bytes(client.read_memory(descriptor.symbol("gBattleStruct"), 4), "little")
+        if not 0x02000000 <= ptr <= 0x0203FFFF:
+            return False, {}
     mons = {}
     for side, idx in (("player", descriptor.battle.player_battler),
                       ("opponent", descriptor.battle.opponent_battler)):

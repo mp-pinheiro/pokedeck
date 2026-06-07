@@ -41,10 +41,23 @@ def print_mon(mon):
     pd = _pd()
     name = pd.species_name(mon.species)
     sp = f"#{mon.species} {name}" if name else f"#{mon.species}"
+    shiny = " *shiny*" if mon.is_shiny else ""
     print(f"[{mon.side}] battler {mon.battler}")
-    print(f"  species {sp}  Lv{mon.level}  HP {mon.hp}/{mon.max_hp}")
+    print(f"  species {sp}{shiny}  Lv{mon.level}  HP {mon.hp}/{mon.max_hp}")
     s = mon.stats
     print(f"  stats  ATK{s['attack']} DEF{s['defense']} SPA{s['spAttack']} SPD{s['spDefense']} SPE{s['speed']}")
+    if mon.ivs:
+        iv = mon.iv_spread
+        print(f"  IVs    HP{iv['hp']} ATK{iv['atk']} DEF{iv['def']} SPA{iv['spa']} SPD{iv['spd']} SPE{iv['spe']}")
+    meta = []
+    if mon.ability:
+        meta.append(f"ability {pd.ability_name(mon.ability) or '#' + str(mon.ability)}")
+    if mon.item:
+        meta.append(f"item {pd.item_name(mon.item) or '#' + str(mon.item)}")
+    if mon.friendship:
+        meta.append(f"friendship {mon.friendship}")
+    if meta:
+        print(f"  {' · '.join(meta)}")
     print(f"  types  {', '.join(mon.types) or '—'}")
     w = mon.weaknesses()
     if w["weak"]:
@@ -54,11 +67,14 @@ def print_mon(mon):
     if w["immune"]:
         print(f"  immune {', '.join(t for t, _ in w['immune'])}")
     moves = []
-    for mid in mon.moves:
+    for i, mid in enumerate(mon.moves):
         if mid == 0:
             continue
         mv = pd.move(mid)
-        moves.append(f"{mv['name']} ({mv['type']})" if mv else f"#{mid}")
+        label = f"{mv['name']} ({mv['type']})" if mv else f"#{mid}"
+        if i < len(mon.pp):
+            label += f" {mon.pp[i]}pp"
+        moves.append(label)
     print(f"  moves  {', '.join(moves) or '—'}")
     if mon.status1:
         print(f"  status 0x{mon.status1:08x}")

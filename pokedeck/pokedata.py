@@ -13,6 +13,8 @@ class PokeData:
     def __init__(self, data_dir=REPO_DATA):
         self.species = self._load(data_dir, "species.json")
         self.moves = self._load(data_dir, "moves.json")
+        self.abilities = self._load(data_dir, "abilities.json")
+        self.items = self._load(data_dir, "items.json")
 
     @staticmethod
     def _load(data_dir, name):
@@ -27,3 +29,9 @@ class PokeData:
 
     def move(self, move_id):
         return self.moves.get(str(move_id))
+
+    def ability_name(self, ability_id):
+        return self.abilities.get(str(ability_id))
+
+    def item_name(self, item_id):
+        return self.items.get(str(item_id))
