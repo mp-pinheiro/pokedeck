@@ -101,6 +101,12 @@ Run it on the machine where RetroArch is (Network Commands on, mGBA core):
     pnpm --filter @poke-deck/web build
     python3 -m pokedeck.server --game lazarus     # then open http://localhost:8420
 
+For **live UI work** use HMR instead — `make web` (or `bash tools/dev.sh`) runs the
+backend with `--reload` *and* the Vite dev server together. Open the **Vite** URL it
+prints (`http://localhost:5173`), not `:8420`; Vite proxies `/api` and `/events` to the
+backend, and editing `packages/ui` or `apps/web` hot-reloads (the backend hot-reloads on
+`pokedeck/*.py` too). `:8420` only serves the pre-built `dist/`.
+
 The Decky backend (`main.py`) also hosts the same SSE server (port 8420), so the QAM
 panel and a LAN browser show the battle at once. Switch games live via the in-app picker
 (`POST /api/game`) or, in Decky, the `set_game` backend method.

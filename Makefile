@@ -14,6 +14,7 @@ DECK_PLUGIN_DIR ?= /home/deck/homebrew/plugins/$(PLUGIN_NAME)
 CEF_DEBUG_PORT  ?= 8081
 DEBUG           ?= 1        # 1 = inject plugin.json "debug" flag (Decky auto-reload on deploy)
 STAGE            = build/deploy
+GAME            ?= lazarus
 
 SSH   = ssh -p $(DECK_PORT) $(DECK_USER)@$(DECK_HOST)
 SCP   = scp -P $(DECK_PORT)
@@ -21,11 +22,16 @@ SCP   = scp -P $(DECK_PORT)
 SUDO  = sshpass -p '$(DECK_PASSWORD)' ssh -p $(DECK_PORT) $(DECK_USER)@$(DECK_HOST) "echo '$(DECK_PASSWORD)' | sudo -S"
 DBG   = $(if $(filter 1 true yes,$(DEBUG)),--debug,)
 
-.PHONY: all install build stage deploy verify logs cef restart undeploy dev clean help
+.PHONY: all install web build stage deploy verify logs cef restart undeploy dev clean help
 all: build
 
 install:
 	pnpm i
+
+# Frontend dev: Python backend (hot-reload) + Vite dev server (HMR). Open the
+# Vite URL it prints (http://localhost:5173), not :8420.
+web:
+	bash tools/dev.sh $(GAME)
 
 build:
 	pnpm run build                      # Decky frontend -> dist/index.js
@@ -73,7 +79,8 @@ clean:
 	rm -rf $(STAGE) dist py_modules defaults
 
 help:
-	@echo "poke-deck Deck workflow (config in .env, see .env.example):"
+	@echo "poke-deck workflow:"
+	@echo "  make web       frontend dev: backend (hot-reload) + Vite HMR (open :5173)"
 	@echo "  make deploy    build + push to the Deck (DEBUG=1 -> auto-reload)"
 	@echo "  make verify    check the deployed files exist"
 	@echo "  make logs      tail Decky loader logs"
