@@ -46,7 +46,10 @@ class Plugin:
         """Frontend-callable PokeAPI lookup (flavor/evolution/sprites), disk-cached.
         Runs the blocking fetch off the event loop. Returns {} when unreachable."""
         try:
-            return await asyncio.to_thread(species_extra, dex) or {}
+            data = await asyncio.to_thread(species_extra, dex)
+            if not data:
+                decky.logger.warning("get_species(%s): no data (PokeAPI unreachable from the Deck?)", dex)
+            return data or {}
         except Exception:
             decky.logger.exception("get_species failed")
             return {}

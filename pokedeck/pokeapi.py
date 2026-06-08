@@ -6,9 +6,12 @@ network. Battle-relevant data (stats/types/abilities/moves) comes from the ROM;
 this is purely the reference/flavour layer.
 """
 import json
+import logging
 import os
 import urllib.request
 from urllib.error import HTTPError, URLError
+
+_log = logging.getLogger(__name__)
 
 _PKG = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_PKG)
@@ -71,7 +74,8 @@ def species_extra(dex, fetch=_http_get):
     try:
         poke = fetch(f"{BASE}/pokemon/{dex}/")
         spec = fetch(f"{BASE}/pokemon-species/{dex}/")
-    except (URLError, HTTPError, ValueError, OSError, TimeoutError):
+    except (URLError, HTTPError, ValueError, OSError, TimeoutError) as exc:
+        _log.warning("pokeapi fetch failed for dex %s: %r", dex, exc)
         return None
 
     evolution = []

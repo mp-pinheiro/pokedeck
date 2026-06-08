@@ -74,15 +74,22 @@ function deckyTransport(): BattleTransport {
   };
 }
 
+// Match the browser shell's typeface inside the panel. If Steam's CSP blocks the
+// remote @import the cards just fall back to the system font (still readable).
+const FONT_CSS = "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');";
+
 function Content() {
   const transport = useMemo(deckyTransport, []);
   const state = useBattleState(transport);
   return (
     <PanelSection>
       <PanelSectionRow>
-        <InteractiveProvider value={interactive}>
-          <BattleScreen state={state} fetchSpecies={fetchSpecies} />
-        </InteractiveProvider>
+        <style>{FONT_CSS}</style>
+        <div style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
+          <InteractiveProvider value={interactive}>
+            <BattleScreen state={state} fetchSpecies={fetchSpecies} />
+          </InteractiveProvider>
+        </div>
       </PanelSectionRow>
     </PanelSection>
   );
