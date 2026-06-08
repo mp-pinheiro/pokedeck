@@ -168,6 +168,7 @@ export function MonDetail({
           <div>
             <span style={{ ...HUD_LABEL, marginRight: 6 }}>{active ? "Ability" : "Abilities"}</span>
             {abilityText}
+            {active && a.ability_desc && <span style={{ opacity: 0.62 }}> — {a.ability_desc}</span>}
           </div>
         )}
         {active && a.friendship != null && (

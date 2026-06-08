@@ -1,13 +1,6 @@
 import type { Move } from "./types";
 import { typeColor } from "./theme";
 
-// Damage category -> dot color (physical/special/status).
-const CAT_COLOR: Record<string, string> = {
-  physical: "#e5673f",
-  special: "#4f86c6",
-  status: "#9aa0aa",
-};
-
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -21,22 +14,16 @@ function Stat({ label, value, title }: { label: string; value: string; title: st
   );
 }
 
-// Compact: name gets priority, only power/accuracy alongside (PP/desc would crowd
-// the name and truncate it). Detailed (detail page): + PP + effect text.
+// Line 1: name + power/accuracy. Line 2: type · category (so you can read the
+// move's typing and whether it's physical/special at a glance). Detailed adds
+// PP, priority, and the effect text.
 function Row({ mv, detailed }: { mv: Move; detailed?: boolean }) {
   const c = typeColor(mv.type);
   const status = mv.category === "status";
-  const meta =
-    (mv.category ? cap(mv.category) : "") +
-    (mv.priority ? `${mv.category ? " · " : ""}Prio ${mv.priority > 0 ? "+" : ""}${mv.priority}` : "");
   return (
-    <div style={{ padding: "4px 8px", borderRadius: 8, background: `${c}20`, borderLeft: `3px solid ${c}` }}>
+    <div style={{ padding: "5px 9px", borderRadius: 8, background: `${c}1e`, borderLeft: `3px solid ${c}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span
-          title={mv.category ?? undefined}
-          style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: CAT_COLOR[mv.category ?? "status"] ?? "#9aa0aa" }}
-        />
-        <span style={{ fontWeight: 700, fontSize: "0.85em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontWeight: 700, fontSize: "0.86em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {mv.name}
         </span>
         <span style={{ fontSize: "0.72em", opacity: 0.85, fontVariantNumeric: "tabular-nums", display: "flex", gap: 9, flexShrink: 0 }}>
@@ -47,12 +34,22 @@ function Row({ mv, detailed }: { mv: Move; detailed?: boolean }) {
           )}
         </span>
       </div>
-      {detailed && (mv.desc || meta) && (
-        <div style={{ fontSize: "0.72em", opacity: 0.68, marginTop: 3, paddingLeft: 14, lineHeight: 1.35 }}>
-          {meta}
-          {meta && mv.desc ? " — " : ""}
-          {mv.desc}
-        </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: "0.68em" }}>
+        <span style={{ color: c, fontWeight: 700 }}>{mv.type ?? "—"}</span>
+        <span style={{ opacity: 0.35 }}>·</span>
+        <span style={{ opacity: 0.7 }}>{mv.category ? cap(mv.category) : "—"}</span>
+        {detailed && mv.priority ? (
+          <>
+            <span style={{ opacity: 0.35 }}>·</span>
+            <span style={{ opacity: 0.7 }}>
+              Prio {mv.priority > 0 ? "+" : ""}
+              {mv.priority}
+            </span>
+          </>
+        ) : null}
+      </div>
+      {detailed && mv.desc && (
+        <div style={{ fontSize: "0.72em", opacity: 0.68, marginTop: 3, lineHeight: 1.35 }}>{mv.desc}</div>
       )}
     </div>
   );
@@ -61,7 +58,7 @@ function Row({ mv, detailed }: { mv: Move; detailed?: boolean }) {
 export function MoveList({ moves, detailed = false }: { moves: Move[]; detailed?: boolean }) {
   if (!moves || moves.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: detailed ? 5 : 3, marginTop: 7 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 7 }}>
       {moves.map((mv, i) => (
         <Row key={i} mv={mv} detailed={detailed} />
       ))}

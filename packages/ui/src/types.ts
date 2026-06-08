@@ -23,6 +23,7 @@ export interface Mon {
   status: number;
   shiny: boolean;
   ability: string | null;
+  ability_desc: string | null; // the active ability's effect text
   abilities: string[]; // species' possible abilities (baseline)
   item: string | null;
   item_desc: string | null;

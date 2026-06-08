@@ -3,12 +3,22 @@ import { Pressable } from "./Pressable";
 import { Sprite } from "./Sprite";
 import { Pill } from "./Pill";
 import { HpBar } from "./HpBar";
-import { WeakPills } from "./WeakPills";
+import { MatchupRows } from "./MatchupRows";
 import { MoveList } from "./MoveList";
 import { typeColor, statusInfo, HUD_LABEL } from "./theme";
 
-// Full active-battler card — identical layout for your mon and the opponent's:
-// types, Weak to, HP (with numbers), and the move list. Tap (A) for full detail.
+function Info({ label, name, desc }: { label: string; name: string; desc: string | null }) {
+  return (
+    <div style={{ marginTop: 7, fontSize: "0.84em", lineHeight: 1.4 }}>
+      <span style={{ ...HUD_LABEL, marginRight: 6, opacity: 0.55 }}>{label}</span>
+      <span style={{ fontWeight: 700 }}>{name}</span>
+      {desc && <span style={{ opacity: 0.62 }}> — {desc}</span>}
+    </div>
+  );
+}
+
+// Full active-battler card — identical for your mon and the opponent's: types,
+// Weak to / Immune, ability + item (with effect text), HP (numbers), moves.
 export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; onOpen?: () => void }) {
   const accent = typeColor(mon.types[0]);
   const dex = mon.dex ?? mon.species_id;
@@ -40,6 +50,8 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
                 {status.label}
               </Pill>
             )}
+          </div>
+          <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
             {mon.types.map((t) => (
               <Pill key={t} bg={typeColor(t)}>
                 {t}
@@ -49,9 +61,12 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
         </div>
       </div>
 
-      <WeakPills weak={mon.weak} />
+      <MatchupRows weak={mon.weak} immune={mon.immune} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+      {mon.ability && <Info label="Ability" name={mon.ability} desc={mon.ability_desc} />}
+      {mon.item && <Info label="Item" name={`◈ ${mon.item}`} desc={mon.item_desc} />}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9 }}>
         <div style={{ flex: 1 }}>
           <HpBar hp={mon.hp} max={mon.max_hp} />
         </div>
