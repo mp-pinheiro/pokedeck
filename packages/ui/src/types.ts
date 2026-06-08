@@ -24,7 +24,7 @@ export interface Mon {
   shiny: boolean;
   ability: string | null;
   ability_desc: string | null; // the active ability's effect text
-  abilities: string[]; // species' possible abilities (baseline)
+  abilities: { name: string; desc: string | null }[]; // species' possible abilities (baseline)
   item: string | null;
   item_desc: string | null;
   friendship: number;
@@ -48,7 +48,7 @@ export interface PartyMon {
   shiny: boolean;
   item: string | null;
   item_desc: string | null;
-  abilities: string[];
+  abilities: { name: string; desc: string | null }[];
   base: Record<string, number> | null;
   types: string[];
   weak: [string, number][];

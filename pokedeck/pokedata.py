@@ -21,6 +21,8 @@ class PokeData:
         self.items_desc = self._load(data_dir, "items_desc.json")
         self.nat_dex = self._load(data_dir, "nat_dex.json")
         self.sp_info = self._load(data_dir, "species_info.json")
+        # species_info stores abilities as display names; map name -> effect text.
+        self._ability_desc_by_name = {nm: self.abilities_desc.get(aid) for aid, nm in self.abilities.items()}
 
     @staticmethod
     def _load(data_dir, name):
@@ -47,6 +49,10 @@ class PokeData:
     def info(self, species_id):
         """Species baseline {types, base, abilities} (expansion default). Empty if unknown."""
         return self.sp_info.get(str(species_id)) or {}
+
+    def species_abilities(self, species_id):
+        """The species' possible abilities as [{name, desc}]."""
+        return [{"name": n, "desc": self._ability_desc_by_name.get(n)} for n in self.info(species_id).get("abilities", [])]
 
     def species_types(self, species_id):
         return self.info(species_id).get("types", [])

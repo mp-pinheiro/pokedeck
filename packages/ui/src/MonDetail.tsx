@@ -94,7 +94,6 @@ export function MonDetail({
   }, [dex, fetchSpecies]);
   const accent = typeColor(mon.types[0]);
   const status = active ? statusInfo(a.status ?? 0) : null;
-  const abilityText = active ? a.ability : mon.abilities.join(" / ") || null;
 
   return (
     <div>
@@ -163,21 +162,32 @@ export function MonDetail({
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 12, fontSize: "0.86em" }}>
-        {abilityText && (
-          <div>
-            <span style={{ ...HUD_LABEL, marginRight: 6 }}>{active ? "Ability" : "Abilities"}</span>
-            {abilityText}
-            {active && a.ability_desc && <span style={{ opacity: 0.62 }}> — {a.ability_desc}</span>}
-          </div>
-        )}
-        {active && a.friendship != null && (
-          <div>
-            <span style={{ ...HUD_LABEL, marginRight: 6 }}>Friendship</span>
-            {a.friendship}
-          </div>
-        )}
-      </div>
+      {active
+        ? a.ability && (
+            <div style={{ marginTop: 12, fontSize: "0.86em", lineHeight: 1.4 }}>
+              <span style={{ ...HUD_LABEL, marginRight: 6 }}>Ability</span>
+              <span style={{ fontWeight: 700 }}>{a.ability}</span>
+              {a.ability_desc && <span style={{ opacity: 0.62 }}> — {a.ability_desc}</span>}
+            </div>
+          )
+        : mon.abilities.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: "0.86em", lineHeight: 1.4 }}>
+              <div style={{ ...HUD_LABEL, marginBottom: 4 }}>{mon.abilities.length > 1 ? "Abilities" : "Ability"}</div>
+              {mon.abilities.map((ab, i) => (
+                <div key={i} style={{ marginTop: i ? 3 : 0 }}>
+                  <span style={{ fontWeight: 700 }}>{ab.name}</span>
+                  {ab.desc && <span style={{ opacity: 0.62 }}> — {ab.desc}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+      {active && a.friendship != null && (
+        <div style={{ marginTop: 7, fontSize: "0.86em" }}>
+          <span style={{ ...HUD_LABEL, marginRight: 6 }}>Friendship</span>
+          {a.friendship}
+        </div>
+      )}
 
       {mon.item && (
         <div style={{ marginTop: 8, fontSize: "0.86em" }}>
