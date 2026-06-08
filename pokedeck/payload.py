@@ -47,6 +47,7 @@ def mon_to_dict(mon, pd):
         "status": mon.status1,
         "shiny": mon.is_shiny,
         "ability": pd.ability_name(mon.ability) or (f"#{mon.ability}" if mon.ability else None),
+        "ability_desc": pd.ability_desc(mon.ability) if mon.ability else None,
         "abilities": info.get("abilities", []),
         "item": pd.item_name(mon.item) or (f"#{mon.item}" if mon.item else None),
         "item_desc": pd.item_desc(mon.item) if mon.item else None,

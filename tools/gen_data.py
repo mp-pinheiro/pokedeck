@@ -242,6 +242,8 @@ def main():
     ab_ids = parse_id_map(os.path.join(src, "abilities.h"), "ABILITY")
     ab_names = parse_block_names(os.path.join(src, "abilities_data.h"), "ABILITY")
     abilities = _id_name_table(ab_ids, ab_names, skip=("-------", ""))
+    ab_descs = parse_block_descs(os.path.join(src, "abilities_data.h"), "ABILITY")
+    abilities_desc = {str(ab_ids[c]): d for c, d in ab_descs.items() if c in ab_ids and str(ab_ids[c]) in abilities}
 
     # internal species id -> {types[], base{}, abilities[]} with consts resolved to names.
     type_defines = parse_type_defines(fam_paths)
@@ -284,7 +286,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     tables = (
         ("species", species), ("moves", moves), ("abilities", abilities),
-        ("items", items), ("items_desc", items_desc),
+        ("abilities_desc", abilities_desc), ("items", items), ("items_desc", items_desc),
         ("nat_dex", nat_dex), ("species_info", species_info),
     )
     for name, table in tables:
