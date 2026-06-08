@@ -4,7 +4,6 @@ import { Sprite } from "./Sprite";
 import { Pill } from "./Pill";
 import { HpBar } from "./HpBar";
 import { Matchups } from "./Matchups";
-import { MoveList } from "./MoveList";
 import { typeColor, statusInfo, HUD_LABEL } from "./theme";
 
 function Attr({ label, name, desc }: { label: string; name: string; desc: string | null }) {
@@ -72,8 +71,6 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
           {mon.hp}/{mon.max_hp}
         </span>
       </div>
-
-      <MoveList moves={mon.moves} />
     </Pressable>
   );
 }
