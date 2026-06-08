@@ -1,5 +1,6 @@
 import type { BattleState } from "./types";
-import { MonCard } from "./MonCard";
+import { WeaknessHero } from "./WeaknessHero";
+import { MonRow } from "./MonRow";
 
 function Hint({ text }: { text: string }) {
   return (
@@ -28,13 +29,11 @@ export function BattleView({
   if (!state || !state.connected) return <Hint text="Waiting for RetroArch…" />;
   if (!state.in_battle) return <Hint text="Not in a battle." />;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {state.opponent && (
-        <MonCard mon={state.opponent} label="Opponent" onOpen={onSelect && (() => onSelect("opponent"))} />
+        <WeaknessHero mon={state.opponent} label="Opponent" onOpen={onSelect && (() => onSelect("opponent"))} />
       )}
-      {state.player && (
-        <MonCard mon={state.player} label="Your Pokémon" onOpen={onSelect && (() => onSelect("player"))} />
-      )}
+      {state.player && <MonRow mon={state.player} label="You" onOpen={onSelect && (() => onSelect("player"))} />}
     </div>
   );
 }
