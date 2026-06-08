@@ -3,10 +3,11 @@ import { Pressable } from "./Pressable";
 import { Sprite } from "./Sprite";
 import { Pill } from "./Pill";
 import { HpBar } from "./HpBar";
+import { WeakPills } from "./WeakPills";
 import { typeColor, HUD_LABEL } from "./theme";
 
-// Compact, glanceable row: sprite + name/Lv + types + weakness summary + HP.
-// No moves/ability/stats — those live in the drill-in detail, so nothing truncates.
+// Compact bench row: sprite + name/Lv + types + Weak to + HP (with numbers).
+// No moves — benches are secondary; tap (A) for the full detail.
 export function MonRow({ mon, label, onOpen }: { mon: Mon | PartyMon; label?: string; onOpen?: () => void }) {
   const accent = typeColor(mon.types[0]);
   const dex = mon.dex ?? mon.species_id;
@@ -40,18 +41,15 @@ export function MonRow({ mon, label, onOpen }: { mon: Mon | PartyMon; label?: st
             </Pill>
           ))}
         </div>
-        {mon.weak.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", margin: "5px 0" }}>
-            <span style={{ ...HUD_LABEL, opacity: 0.5 }}>Weak</span>
-            {mon.weak.map(([t, m]) => (
-              <Pill key={t} bg={typeColor(t)}>
-                {t}
-                {m >= 4 ? " ×4" : ""}
-              </Pill>
-            ))}
+        <WeakPills weak={mon.weak} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <div style={{ flex: 1 }}>
+            <HpBar hp={mon.hp} max={mon.max_hp} />
           </div>
-        )}
-        <HpBar hp={mon.hp} max={mon.max_hp} />
+          <span style={{ fontSize: "0.72em", opacity: 0.8, fontVariantNumeric: "tabular-nums" }}>
+            {mon.hp}/{mon.max_hp}
+          </span>
+        </div>
       </div>
     </Pressable>
   );

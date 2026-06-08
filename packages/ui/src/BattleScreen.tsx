@@ -3,6 +3,7 @@ import type { BattleState, FetchSpecies, Mon, PartyMon } from "./types";
 import { BattleView } from "./BattleView";
 import { PartyView } from "./PartyView";
 import { MonDetail } from "./MonDetail";
+import { SectionHeader } from "./SectionHeader";
 import { CancelZone } from "./Pressable";
 
 type Sel =
@@ -53,10 +54,11 @@ export function BattleScreen({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <SectionHeader title="Battle" first />
       <BattleView state={state} onSelect={(side) => setSel({ group: "active", side })} />
-      <PartyView party={state?.opponent_party} label="Opponent team" onSelect={(i) => setSel({ group: "oppparty", i })} />
-      <PartyView party={state?.party} label="Your team" onSelect={(i) => setSel({ group: "party", i })} />
+      <PartyView party={state?.opponent_party} label="Opponent Team" onSelect={(i) => setSel({ group: "oppparty", i })} />
+      <PartyView party={state?.party} label="My Team" onSelect={(i) => setSel({ group: "party", i })} />
     </div>
   );
 }

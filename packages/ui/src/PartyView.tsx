@@ -1,6 +1,6 @@
 import type { PartyMon } from "./types";
 import { MonRow } from "./MonRow";
-import { HUD_LABEL } from "./theme";
+import { SectionHeader } from "./SectionHeader";
 
 export function PartyView({
   party,
@@ -13,8 +13,8 @@ export function PartyView({
 }) {
   if (!party || party.length === 0) return null;
   return (
-    <div style={{ marginTop: 13 }}>
-      {label && <div style={{ ...HUD_LABEL, marginBottom: 6 }}>{label}</div>}
+    <div>
+      {label && <SectionHeader title={label} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {party.map((m, i) => (
           <MonRow key={i} mon={m} onOpen={onSelect && (() => onSelect(i))} />

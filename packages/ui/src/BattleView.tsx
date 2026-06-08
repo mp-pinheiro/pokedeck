@@ -1,6 +1,5 @@
 import type { BattleState } from "./types";
-import { WeaknessHero } from "./WeaknessHero";
-import { MonRow } from "./MonRow";
+import { BattleCard } from "./BattleCard";
 
 function Hint({ text }: { text: string }) {
   return (
@@ -31,9 +30,9 @@ export function BattleView({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {state.opponent && (
-        <WeaknessHero mon={state.opponent} label="Opponent" onOpen={onSelect && (() => onSelect("opponent"))} />
+        <BattleCard mon={state.opponent} label="Opponent" onOpen={onSelect && (() => onSelect("opponent"))} />
       )}
-      {state.player && <MonRow mon={state.player} label="You" onOpen={onSelect && (() => onSelect("player"))} />}
+      {state.player && <BattleCard mon={state.player} label="You" onOpen={onSelect && (() => onSelect("player"))} />}
     </div>
   );
 }
