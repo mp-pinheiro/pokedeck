@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { FetchSpecies, Mon, PartyMon, SpeciesExtra } from "./types";
 import { Pokedex } from "./Pokedex";
+import { Matchups } from "./Matchups";
 import { Pressable, FocusItem } from "./Pressable";
 import { Pill } from "./Pill";
 import { Sprite } from "./Sprite";
@@ -20,47 +21,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const RESIST_LABEL: Record<string, string> = { "0.5": "×½", "0.25": "×¼" };
-
-function Matchups({ mon }: { mon: Mon | PartyMon }) {
-  const row = (label: string, pills: ReactNode) => (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", marginBottom: 5 }}>
-      <span style={{ ...HUD_LABEL, width: 52, opacity: 0.5 }}>{label}</span>
-      {pills}
-    </div>
-  );
-  return (
-    <div>
-      {mon.weak.length > 0 &&
-        row(
-          "Weak",
-          mon.weak.map(([t, m]) => (
-            <Pill key={t} bg={typeColor(t)}>
-              {t} {m >= 4 ? "×4" : "×2"}
-            </Pill>
-          )),
-        )}
-      {mon.resist.length > 0 &&
-        row(
-          "Resist",
-          mon.resist.map(([t, m]) => (
-            <Pill key={t} bg={typeColor(t)}>
-              {t} {RESIST_LABEL[String(m)] ?? `×${m}`}
-            </Pill>
-          )),
-        )}
-      {mon.immune.length > 0 &&
-        row(
-          "Immune",
-          mon.immune.map((t) => (
-            <Pill key={t} bg={typeColor(t)}>
-              {t} ×0
-            </Pill>
-          )),
-        )}
-    </div>
-  );
-}
 
 export function MonDetail({
   mon,
@@ -210,7 +170,7 @@ export function MonDetail({
       )}
 
       <Section title="Type matchups">
-        <Matchups mon={mon} />
+        <Matchups weak={mon.weak} resist={mon.resist} immune={mon.immune} />
       </Section>
 
       {mon.moves.length > 0 && (

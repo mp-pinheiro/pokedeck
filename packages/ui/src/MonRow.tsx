@@ -3,7 +3,7 @@ import { Pressable } from "./Pressable";
 import { Sprite } from "./Sprite";
 import { Pill } from "./Pill";
 import { HpBar } from "./HpBar";
-import { MatchupRows } from "./MatchupRows";
+import { Matchups } from "./Matchups";
 import { typeColor, HUD_LABEL } from "./theme";
 
 // Compact bench row: sprite + name/Lv + types + Weak to + HP (with numbers).
@@ -41,7 +41,7 @@ export function MonRow({ mon, label, onOpen }: { mon: Mon | PartyMon; label?: st
             </Pill>
           ))}
         </div>
-        <MatchupRows weak={mon.weak} immune={mon.immune} />
+        <Matchups weak={mon.weak} resist={mon.resist} immune={mon.immune} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <div style={{ flex: 1 }}>
             <HpBar hp={mon.hp} max={mon.max_hp} />

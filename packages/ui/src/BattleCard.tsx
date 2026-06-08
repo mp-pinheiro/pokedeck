@@ -1,22 +1,18 @@
-import type { ReactNode } from "react";
 import type { Mon } from "./types";
 import { Pressable } from "./Pressable";
 import { Sprite } from "./Sprite";
 import { Pill } from "./Pill";
 import { HpBar } from "./HpBar";
+import { Matchups } from "./Matchups";
 import { MoveList } from "./MoveList";
 import { typeColor, statusInfo, HUD_LABEL } from "./theme";
 
-// Aligned label/value row — every field hangs off the same label column so the
-// type / weakness / immunity / ability / item blocks read as a clean table
-// instead of a cluster of pills.
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Attr({ label, name, desc }: { label: string; name: string; desc: string | null }) {
   return (
-    <div style={{ display: "flex", gap: 9, alignItems: "baseline", marginTop: 7 }}>
-      <span style={{ ...HUD_LABEL, width: 52, flexShrink: 0, opacity: 0.5, textAlign: "right" }}>{label}</span>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexWrap: "wrap", gap: 5, alignItems: "baseline" }}>
-        {children}
-      </div>
+    <div style={{ marginTop: 7, fontSize: "0.86em", lineHeight: 1.4 }}>
+      <span style={{ ...HUD_LABEL, marginRight: 6, opacity: 0.5 }}>{label}</span>
+      <span style={{ fontWeight: 700 }}>{name}</span>
+      {desc && <span style={{ opacity: 0.62 }}> — {desc}</span>}
     </div>
   );
 }
@@ -37,7 +33,7 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
         boxShadow: `0 12px 30px -20px ${accent}`,
       }}
     >
-      <div style={{ display: "flex", gap: 11, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 11 }}>
         <Sprite id={dex} size={50} alt={mon.species} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ ...HUD_LABEL, color: accent, opacity: 0.95 }}>{label}</div>
@@ -53,49 +49,20 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
               </Pill>
             )}
           </div>
+          <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+            {mon.types.map((t) => (
+              <Pill key={t} bg={typeColor(t)}>
+                {t}
+              </Pill>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 4 }}>
-        <Field label="Type">
-          {mon.types.map((t) => (
-            <Pill key={t} bg={typeColor(t)}>
-              {t}
-            </Pill>
-          ))}
-        </Field>
-        {mon.weak.length > 0 && (
-          <Field label="Weak">
-            {mon.weak.map(([t, m]) => (
-              <Pill key={t} bg={typeColor(t)}>
-                {t}
-                {m >= 4 ? " ×4" : ""}
-              </Pill>
-            ))}
-          </Field>
-        )}
-        {mon.immune.length > 0 && (
-          <Field label="Immune">
-            {mon.immune.map((t) => (
-              <Pill key={t} bg={typeColor(t)}>
-                {t}
-              </Pill>
-            ))}
-          </Field>
-        )}
-        {mon.ability && (
-          <Field label="Ability">
-            <span style={{ fontWeight: 700, fontSize: "0.9em" }}>{mon.ability}</span>
-            {mon.ability_desc && <span style={{ fontSize: "0.82em", opacity: 0.6 }}>{mon.ability_desc}</span>}
-          </Field>
-        )}
-        {mon.item && (
-          <Field label="Item">
-            <span style={{ fontWeight: 700, fontSize: "0.9em" }}>◈ {mon.item}</span>
-            {mon.item_desc && <span style={{ fontSize: "0.82em", opacity: 0.6 }}>{mon.item_desc}</span>}
-          </Field>
-        )}
-      </div>
+      <Matchups weak={mon.weak} resist={mon.resist} immune={mon.immune} />
+
+      {mon.ability && <Attr label="Ability" name={mon.ability} desc={mon.ability_desc} />}
+      {mon.item && <Attr label="Item" name={`◈ ${mon.item}`} desc={mon.item_desc} />}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
         <div style={{ flex: 1 }}>
