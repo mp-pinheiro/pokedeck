@@ -1,21 +1,53 @@
 import { Focusable, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
 import { addEventListener, removeEventListener, call, definePlugin } from "@decky/api";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { FaBolt } from "react-icons/fa";
 import { BattleScreen, InteractiveProvider, useBattleState } from "@poke-deck/ui";
 import type { BattleListener, BattleState, BattleTransport, InteractiveImpl, SpeciesExtra } from "@poke-deck/ui";
 
-// Make shared cards/rows/sections reachable by the Steam gamepad via @decky/ui
-// <Focusable>: A activates (onActivate), the d-pad lands on focus stops so the
-// panel scrolls, and B (onCancel) goes Back from the detail view.
-const interactive: InteractiveImpl = {
-  pressable: ({ onPress, children, style }) => (
-    <Focusable onActivate={() => onPress()} onClick={() => onPress()} onOKActionDescription="Select" style={style}>
+const RING = "0 0 0 2px #6cb4ff, 0 0 16px #6cb4ff66";
+
+// A gamepad focus stop with a VISIBLE highlight. Steam's default ring is hard to
+// see on our dark cards, so we draw an explicit blue ring via onGamepadFocus.
+// onPress => activatable (A); no onPress => a plain focus stop (for scrolling).
+function DeckFocusable({
+  onPress,
+  children,
+  style,
+}: {
+  onPress?: () => void;
+  children: ReactNode;
+  style?: CSSProperties;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <Focusable
+      onActivate={onPress ? () => onPress() : undefined}
+      onClick={onPress ? () => onPress() : undefined}
+      onOKActionDescription={onPress ? "Select" : undefined}
+      onGamepadFocus={() => setFocused(true)}
+      onGamepadBlur={() => setFocused(false)}
+      style={{
+        ...style,
+        ...(focused ? { boxShadow: style?.boxShadow ? `${style.boxShadow}, ${RING}` : RING } : {}),
+      }}
+    >
       {children}
     </Focusable>
+  );
+}
+
+// Make shared cards/rows/sections reachable by the Steam gamepad. A activates,
+// the d-pad lands on focus stops (visible ring) so the panel scrolls, and B
+// (onCancel) goes Back from the detail view.
+const interactive: InteractiveImpl = {
+  pressable: ({ onPress, children, style }) => (
+    <DeckFocusable onPress={onPress} style={style}>
+      {children}
+    </DeckFocusable>
   ),
-  focusItem: ({ children, style }) => <Focusable style={style}>{children}</Focusable>,
-  // B anywhere in the detail view goes Back; the footer shows the "Back" hint.
+  focusItem: ({ children, style }) => <DeckFocusable style={style}>{children}</DeckFocusable>,
   cancelZone: ({ onCancel, children }) => (
     <Focusable onCancel={() => onCancel()} onCancelActionDescription="Back">
       {children}
@@ -45,7 +77,7 @@ function Content() {
   const transport = useMemo(deckyTransport, []);
   const state = useBattleState(transport);
   return (
-    <PanelSection title="Poke Deck">
+    <PanelSection>
       <PanelSectionRow>
         <InteractiveProvider value={interactive}>
           <BattleScreen state={state} fetchSpecies={fetchSpecies} />
