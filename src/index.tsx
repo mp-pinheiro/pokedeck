@@ -2,7 +2,7 @@ import { Focusable, PanelSection, PanelSectionRow, staticClasses } from "@decky/
 import { addEventListener, removeEventListener, call, definePlugin } from "@decky/api";
 import { useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { FaBolt } from "react-icons/fa";
+import { TbPokeball } from "react-icons/tb";
 import { BattleScreen, InteractiveProvider, useBattleState } from "@poke-deck/ui";
 import type { BattleListener, BattleState, BattleTransport, InteractiveImpl, SpeciesExtra } from "@poke-deck/ui";
 
@@ -99,5 +99,5 @@ export default definePlugin(() => ({
   name: "Poke Deck",
   titleView: <div className={staticClasses.Title}>Poke Deck</div>,
   content: <Content />,
-  icon: <FaBolt />,
+  icon: <TbPokeball />,
 }));
