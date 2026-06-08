@@ -26,11 +26,41 @@ TYPE_NAME = {
 NAME_RX = re.compile(r'\.name\s*=\s*[A-Za-z_]*\("((?:[^"\\]|\\.)*)"\)')
 
 
+# Match named/anonymous/typed enums: `enum X {`, `enum {`, `enum X : u16 {`.
+_ENUM_RX = re.compile(r"enum\b[^{]*\{(.*?)\}", re.S)
+_MEMBER_RX = re.compile(r"\b([A-Z][A-Z0-9_]*)\s*(?:=\s*([^,}]+))?\s*(?:,|(?=\}))")
+
+
 def parse_id_map(path, prefix):
-    """constant -> id, from explicit `PREFIX_X = N,` enum lines."""
-    rx = re.compile(r"^\s*(" + prefix + r"_[A-Z0-9_]+)\s*=\s*(\d+)\s*,", re.M)
+    """PREFIX_X -> id, parsing the C enum sequentially. Members auto-increment, but
+    can be overridden by `= <int>` or `= ANOTHER_MEMBER` (e.g. the gen-boundary
+    `ABILITY_STAMINA = ABILITIES_COUNT_GEN6`). All members are tracked so symbolic
+    references resolve; only PREFIX_ members are returned."""
     with open(path, encoding="utf-8") as fh:
-        return {m.group(1): int(m.group(2)) for m in rx.finditer(fh.read())}
+        text = fh.read()
+    text = re.sub(r"//[^\n]*", "", text)
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    needle = prefix + "_"
+    bodies = [b for b in _ENUM_RX.findall(text) if needle in b] or [text]
+    values, out = {}, {}
+    for body in bodies:
+        cur = 0
+        for m in _MEMBER_RX.finditer(body):
+            name, expr = m.group(1), m.group(2)
+            if expr is not None:
+                expr = expr.strip()
+                if re.fullmatch(r"-?\d+", expr):
+                    cur = int(expr)
+                elif re.fullmatch(r"0[xX][0-9a-fA-F]+", expr):
+                    cur = int(expr, 16)
+                elif expr in values:
+                    cur = values[expr]
+                # else: unknown expression — keep the running counter (best effort)
+            values[name] = cur
+            if name.startswith(prefix + "_"):
+                out[name] = cur
+            cur += 1
+    return out
 
 
 def _blocks(text, header_rx):
