@@ -10,7 +10,8 @@ const RING = "0 0 0 2px #6cb4ff, 0 0 16px #6cb4ff66";
 
 // A gamepad focus stop with a VISIBLE highlight. Steam's default ring is hard to
 // see on our dark cards, so we draw an explicit blue ring via onGamepadFocus.
-// onPress => activatable (A); no onPress => a plain focus stop (for scrolling).
+// A Focusable only joins gamepad nav when it has an activate handler, so read-only
+// focus stops (detail sections, for scrolling) get a no-op onActivate.
 function DeckFocusable({
   onPress,
   children,
@@ -23,7 +24,7 @@ function DeckFocusable({
   const [focused, setFocused] = useState(false);
   return (
     <Focusable
-      onActivate={onPress ? () => onPress() : undefined}
+      onActivate={() => onPress?.()}
       onClick={onPress ? () => onPress() : undefined}
       onOKActionDescription={onPress ? "Select" : undefined}
       onGamepadFocus={() => setFocused(true)}
