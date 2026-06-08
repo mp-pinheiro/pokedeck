@@ -8,9 +8,16 @@ and the built web SPA under web/ (see tools/bundle.sh).
 """
 import asyncio
 import os
+import sys
 import threading
 
 import decky
+
+# Decky's debug/auto-reload flag watches the plugin directory. Importing the
+# pokedeck package writes .pyc caches into py_modules/.../__pycache__ (inside that
+# watched dir), which trips the watcher into an endless reload loop. Disable
+# bytecode writes so nothing on disk changes at runtime.
+sys.dont_write_bytecode = True
 
 # descriptor.py / pokeapi.py read their dirs at import — point them at the bundled
 # descriptors and a writable cache before importing anything from pokedeck.
