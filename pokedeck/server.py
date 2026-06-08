@@ -11,12 +11,13 @@ import argparse
 import json
 import os
 import queue
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .battle import read_battle
-from .descriptor import list_games, resolve_game
+from .descriptor import GAMES_DIR, list_games, resolve_game
 from .party import read_party
 from .payload import battle_payload, party_payload
 from .pokeapi import species_extra
@@ -231,6 +232,38 @@ def build_client(args):
     )
 
 
+def _watch_mtimes(paths):
+    """{file: mtime} for *.py / *.json under the given dirs (or files)."""
+    snap = {}
+    for root in paths:
+        if os.path.isfile(root):
+            files = [root]
+        else:
+            files = [os.path.join(dp, fn) for dp, _, fns in os.walk(root)
+                     for fn in fns if fn.endswith((".py", ".json"))]
+        for f in files:
+            try:
+                snap[f] = os.stat(f).st_mtime
+            except OSError:
+                pass
+    return snap
+
+
+def _reloader(httpd, paths, interval=0.5):
+    """Dev hot-reload: re-exec the process when a watched source file changes."""
+    last = _watch_mtimes(paths)
+    while True:
+        time.sleep(interval)
+        now = _watch_mtimes(paths)
+        changed = next((f for f in now if now[f] != last.get(f)),
+                       next((f for f in last if f not in now), None))
+        if changed:
+            print(f"poke-deck: {os.path.relpath(changed)} changed — reloading", flush=True)
+            httpd.server_close()
+            os.execv(sys.executable, [sys.executable, "-m", "pokedeck.server", *sys.argv[1:]])
+        last = now
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--game", default="lazarus")
@@ -241,6 +274,7 @@ def main():
     p.add_argument("--relay-port", type=int, default=55356)
     p.add_argument("--interval", type=float, default=0.25)
     p.add_argument("--port", type=int, default=8420, help="web server port (avoid Decky's 1337/8080)")
+    p.add_argument("--reload", action="store_true", help="dev: restart on changes to pokedeck/ or game descriptors")
     args = p.parse_args()
 
     descriptor, stem = resolve_game(args.game)
@@ -248,7 +282,11 @@ def main():
     hub = Hub()
     threading.Thread(target=poll_loop, args=(hub, session, args.interval), daemon=True).start()
     httpd = make_server(hub, session, args.port)
-    print(f"poke-deck web on http://127.0.0.1:{args.port}  (game={session.descriptor.name}, ra-transport={args.transport})")
+    print(f"poke-deck web on http://127.0.0.1:{args.port}  (game={session.descriptor.name}, ra-transport={args.transport})", flush=True)
+    if args.reload:
+        threading.Thread(target=_reloader, args=(httpd, [os.path.dirname(os.path.abspath(__file__)), GAMES_DIR]),
+                         daemon=True).start()
+        print("poke-deck: --reload watching pokedeck/ + game descriptors", flush=True)
     httpd.serve_forever()
 
 
