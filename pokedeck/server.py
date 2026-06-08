@@ -21,7 +21,7 @@ from .descriptor import GAMES_DIR, list_games, resolve_game
 from .party import read_party
 from .payload import battle_payload, party_payload
 from .pokeapi import species_extra
-from .pokedata import PokeData
+from .pokedata import PokeData, REPO_DATA
 from .retroarch import RetroArchClient, RetroArchError
 
 DEFAULT_WEB_DIR = os.environ.get(
@@ -232,6 +232,11 @@ def build_client(args):
     )
 
 
+# Pruned from the watch walk: the PokeAPI cache writes here at runtime (would
+# self-trigger reloads), and these never hold edited source.
+_WATCH_SKIP = {"cache", "__pycache__", "node_modules", ".git"}
+
+
 def _watch_mtimes(paths):
     """{file: mtime} for *.py / *.json under the given dirs (or files)."""
     snap = {}
@@ -239,8 +244,10 @@ def _watch_mtimes(paths):
         if os.path.isfile(root):
             files = [root]
         else:
-            files = [os.path.join(dp, fn) for dp, _, fns in os.walk(root)
-                     for fn in fns if fn.endswith((".py", ".json"))]
+            files = []
+            for dp, dirs, fns in os.walk(root):
+                dirs[:] = [d for d in dirs if d not in _WATCH_SKIP]
+                files.extend(os.path.join(dp, fn) for fn in fns if fn.endswith((".py", ".json")))
         for f in files:
             try:
                 snap[f] = os.stat(f).st_mtime
@@ -284,9 +291,9 @@ def main():
     httpd = make_server(hub, session, args.port)
     print(f"poke-deck web on http://127.0.0.1:{args.port}  (game={session.descriptor.name}, ra-transport={args.transport})", flush=True)
     if args.reload:
-        threading.Thread(target=_reloader, args=(httpd, [os.path.dirname(os.path.abspath(__file__)), GAMES_DIR]),
-                         daemon=True).start()
-        print("poke-deck: --reload watching pokedeck/ + game descriptors", flush=True)
+        watch = [os.path.dirname(os.path.abspath(__file__)), REPO_DATA, GAMES_DIR]
+        threading.Thread(target=_reloader, args=(httpd, watch), daemon=True).start()
+        print("poke-deck: --reload watching pokedeck/ + data tables + descriptors (cache excluded)", flush=True)
     httpd.serve_forever()
 
 
