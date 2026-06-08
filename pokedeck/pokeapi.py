@@ -8,10 +8,32 @@ this is purely the reference/flavour layer.
 import json
 import logging
 import os
+import ssl
 import urllib.request
 from urllib.error import HTTPError, URLError
 
 _log = logging.getLogger(__name__)
+
+# Decky's bundled Python on SteamOS can't locate the CA bundle (default context
+# raises CERTIFICATE_VERIFY_FAILED), so point it at the system bundle explicitly.
+_CA_CANDIDATES = (
+    "/etc/ssl/certs/ca-certificates.crt",  # SteamOS / Arch / Debian
+    "/etc/pki/tls/certs/ca-bundle.crt",    # Fedora / RHEL
+    "/etc/ssl/cert.pem",                   # macOS / BSD
+)
+
+
+def _ssl_context():
+    for path in _CA_CANDIDATES:
+        if os.path.isfile(path):
+            try:
+                return ssl.create_default_context(cafile=path)
+            except OSError:
+                continue
+    return ssl.create_default_context()
+
+
+_SSL = _ssl_context()
 
 _PKG = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_PKG)
@@ -22,7 +44,7 @@ _TIMEOUT = 8.0
 
 def _http_get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "poke-deck/1.0"})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+    with urllib.request.urlopen(req, timeout=_TIMEOUT, context=_SSL) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
