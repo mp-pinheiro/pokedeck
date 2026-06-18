@@ -6,12 +6,16 @@ import { TbPokeball } from "react-icons/tb";
 import { BattleScreen, InteractiveProvider, useBattleState } from "@poke-deck/ui";
 import type { BattleListener, BattleState, BattleTransport, InteractiveImpl, SpeciesExtra } from "@poke-deck/ui";
 
+// Gamepad focus highlight. We suppress Steam's default ring (noFocusRing) — a
+// hard-to-see square that clashes with our rounded cards — and draw our own via
+// onGamepadFocus. box-shadow respects the element's border-radius, so the ring hugs
+// each card's corners. Actionable cards get a bright glow; read-only focus stops
+// (detail sections, for scrolling) get only a faint marker so a whole section
+// doesn't light up as a block. A Focusable joins gamepad nav only with an activate
+// handler, so read-only stops still get a no-op onActivate.
 const RING = "0 0 0 2px #6cb4ff, 0 0 16px #6cb4ff66";
+const SUBTLE_RING = "0 0 0 1px #6cb4ff55";
 
-// A gamepad focus stop with a VISIBLE highlight. Steam's default ring is hard to
-// see on our dark cards, so we draw an explicit blue ring via onGamepadFocus.
-// A Focusable only joins gamepad nav when it has an activate handler, so read-only
-// focus stops (detail sections, for scrolling) get a no-op onActivate.
 function DeckFocusable({
   onPress,
   children,
@@ -22,8 +26,10 @@ function DeckFocusable({
   style?: CSSProperties;
 }) {
   const [focused, setFocused] = useState(false);
+  const ring = onPress ? RING : SUBTLE_RING;
   return (
     <Focusable
+      noFocusRing
       onActivate={() => onPress?.()}
       onClick={onPress ? () => onPress() : undefined}
       onOKActionDescription={onPress ? "Select" : undefined}
@@ -31,7 +37,7 @@ function DeckFocusable({
       onGamepadBlur={() => setFocused(false)}
       style={{
         ...style,
-        ...(focused ? { boxShadow: style?.boxShadow ? `${style.boxShadow}, ${RING}` : RING } : {}),
+        ...(focused ? { boxShadow: style?.boxShadow ? `${style.boxShadow}, ${ring}` : ring } : {}),
       }}
     >
       {children}
@@ -50,7 +56,7 @@ const interactive: InteractiveImpl = {
   ),
   focusItem: ({ children, style }) => <DeckFocusable style={style}>{children}</DeckFocusable>,
   cancelZone: ({ onCancel, children }) => (
-    <Focusable onCancel={() => onCancel()} onCancelActionDescription="Back">
+    <Focusable noFocusRing onCancel={() => onCancel()} onCancelActionDescription="Back">
       {children}
     </Focusable>
   ),
