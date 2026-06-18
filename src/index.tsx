@@ -91,7 +91,7 @@ function Content() {
     <PanelSection>
       <PanelSectionRow>
         <style>{FONT_CSS}</style>
-        <div style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
+        <div style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontSize: 17.25 }}>
           <InteractiveProvider value={interactive}>
             <BattleScreen state={state} fetchSpecies={fetchSpecies} />
           </InteractiveProvider>

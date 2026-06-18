@@ -33,7 +33,7 @@ export function BattleCard({ mon, label, onOpen }: { mon: Mon; label: string; on
       }}
     >
       <div style={{ display: "flex", gap: 11 }}>
-        <Sprite id={dex} size={50} alt={mon.species} />
+        <Sprite id={dex} size={58} alt={mon.species} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ ...HUD_LABEL, color: accent, opacity: 0.95 }}>{label}</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap", marginTop: 2 }}>

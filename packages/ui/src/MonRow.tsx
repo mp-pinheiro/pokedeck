@@ -26,7 +26,7 @@ export function MonRow({ mon, label, onOpen }: { mon: Mon | PartyMon; label?: st
         opacity: fainted ? 0.5 : 1,
       }}
     >
-      <Sprite id={dex} size={42} alt={mon.species} />
+      <Sprite id={dex} size={48} alt={mon.species} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
           {label && <span style={{ ...HUD_LABEL, opacity: 0.55 }}>{label}</span>}

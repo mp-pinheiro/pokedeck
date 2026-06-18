@@ -85,7 +85,7 @@ export function MonDetail({
           borderLeft: `3px solid ${accent}`,
         }}
       >
-        <Sprite id={dex} size={92} alt={mon.species} />
+        <Sprite id={dex} size={106} alt={mon.species} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {subtitle && <div style={HUD_LABEL}>{subtitle}</div>}
           <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
